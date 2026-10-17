@@ -7,6 +7,22 @@ services:
       - ./html:/usr/share/nginx/html:ro
     networks:
       - proxy
+    # 乗っ取られたときにできることを減らす
+    read_only: true
+    tmpfs:
+      - /var/cache/nginx
+      - /run
+      - /tmp
+    cap_drop:
+      - ALL
+    cap_add:
+      # マスタープロセス（root）が 80 番で待ち受け、ワーカーを nginx ユーザーに切り替えるために必要
+      - CHOWN
+      - SETUID
+      - SETGID
+      - NET_BIND_SERVICE
+    security_opt:
+      - no-new-privileges:true
 
 networks:
   proxy:
