@@ -1,6 +1,7 @@
 services:
   web:
-    image: nginx:alpine
+    # root を使わずに動く公式の Nginx。8080 番で待ち受ける
+    image: nginxinc/nginx-unprivileged:alpine
     container_name: pointp-dev-web
     restart: unless-stopped
     volumes:
@@ -12,17 +13,10 @@ services:
     # 乗っ取られたときにできることを減らす
     read_only: true
     tmpfs:
-      - /var/cache/nginx
-      - /run
+      # このイメージは一時ファイルと pid を /tmp に置く
       - /tmp
     cap_drop:
       - ALL
-    cap_add:
-      # マスタープロセス（root）が 80 番で待ち受け、ワーカーを nginx ユーザーに切り替えるために必要
-      - CHOWN
-      - SETUID
-      - SETGID
-      - NET_BIND_SERVICE
     security_opt:
       - no-new-privileges:true
 
