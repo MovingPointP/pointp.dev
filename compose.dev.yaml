@@ -1,0 +1,6 @@
+# PC でのテスト用。サーバーでは使わない。
+# docker compose -f compose.yaml -f compose.dev.yaml up -d → http://localhost:8080
+services:
+  web:
+    ports:
+      - "127.0.0.1:8080:80"
