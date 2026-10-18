@@ -5,6 +5,8 @@ services:
     restart: unless-stopped
     volumes:
       - ./html:/usr/share/nginx/html:ro
+      # ファイル単体ではなくフォルダでマウントする（git pull で差し替えたファイルが反映されない問題を避ける）
+      - ./nginx:/etc/nginx/conf.d:ro
     networks:
       - proxy
     # 乗っ取られたときにできることを減らす
