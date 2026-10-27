@@ -1,0 +1,12 @@
+version: 2
+updates:
+  # イメージは版と digest で固定し、更新は PR で知らせる（確かめてからマージする）
+  - package-ecosystem: "docker-compose"
+    directory: "/"
+    schedule:
+      # セキュリティの修正に早く気づくため毎日
+      interval: "daily"
+      time: "09:00"
+      timezone: "Asia/Tokyo"
+    commit-message:
+      prefix: "chore"

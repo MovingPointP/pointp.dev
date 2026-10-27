@@ -1,7 +1,8 @@
 services:
   web:
-    # root を使わずに動く公式の Nginx。8080 番で待ち受ける
-    image: nginxinc/nginx-unprivileged:alpine
+    # root を使わずに動く公式の Nginx。8080 番で待ち受ける。
+    # 版と digest を固定し、確かめた版だけを動かす（更新は Dependabot の PR）
+    image: nginxinc/nginx-unprivileged:1.31.7-alpine@sha256:b5047b9b76845eac124358373c6852377c52e4b05834a47647e955dd91cb8f1e
     container_name: pointp-dev-web
     restart: unless-stopped
     volumes:
