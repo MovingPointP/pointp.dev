@@ -48,10 +48,11 @@
       linear-gradient(90deg, var(--color-grid-minor) 1px, transparent 1px);
     background-size: calc(var(--grid-size) * 5) calc(var(--grid-size) * 5), calc(var(--grid-size) * 5) calc(var(--grid-size) * 5), var(--grid-size) var(--grid-size), var(--grid-size) var(--grid-size);
   }
-  .screen svg.lines { position: absolute; inset: 0; width: 100%; height: 100%; --sw-4: 4px; --sw-8: 8px; }
+  .screen svg.lines { position: absolute; inset: 0; width: 100%; height: 100%; --sw-mid: 12px; --sw-bold: 24px; }
   .edge { position: absolute; top: 0; bottom: 0; left: calc(var(--grid-size) * 35); border-left: 2px solid var(--color-world-edge); }
-  .p { position: absolute; left: 50%; top: 50%; width: 14px; height: 14px; margin: -7px; border-radius: var(--radius-full); background: var(--color-current-ink); box-shadow: 0 0 0 3px var(--color-paper); }
-  .p-label { position: absolute; left: calc(50% + 10px); top: calc(50% - 26px); font: italic 600 16px/1 Georgia, serif; color: var(--color-current-ink); }
+  .p { position: absolute; left: 50%; top: 50%; width: 32px; height: 32px; margin: -16px; border-radius: var(--radius-full); background: var(--color-current-ink); box-shadow: 0 0 0 3px var(--color-paper); }
+  .p-label { position: absolute; left: calc(50% + 19px); top: calc(50% - 39px); font: italic 600 20px/1 Georgia, serif; color: var(--color-current-ink); -webkit-text-stroke: 6px var(--color-paper); paint-order: stroke fill; }
+  /* 縁取り 3px: text-stroke は輪郭の両側に描かれるので 6px を指定し、paint-order で文字の下に回す */
   .pt { position: absolute; width: 40px; height: 40px; margin: -20px; border-radius: var(--radius-full); background: var(--color-paper); border: 1.5px solid var(--color-text-muted); display: grid; place-items: center; color: var(--color-text-muted); }
   .pt::after { content: ""; position: absolute; inset: 3px; border-radius: var(--radius-full); border: .75px dashed var(--color-text-muted); }
   .pt svg { width: 22px; height: 22px; }
@@ -114,14 +115,14 @@
     <svg class="lines" viewBox="0 0 1168 640">
       <g id="trail" fill="none" stroke-linecap="round" stroke-linejoin="round">
         <!-- 自己紹介の代わりのダミーの手書き線（Black・中） -->
-        <path d="M120 300 C140 240 160 240 160 300 S180 360 200 300 S220 240 240 300 S260 360 280 300 S300 240 320 300 S340 360 360 300 S380 240 400 300 S420 360 440 300" stroke="var(--ink-black)" style="stroke-width: var(--sw-4)"/>
-        <path d="M440 300 C470 340 430 420 330 420" stroke="var(--ink-black)" style="stroke-width: var(--sw-4)"/>
+        <path d="M120 300 C140 240 160 240 160 300 S180 360 200 300 S220 240 240 300 S260 360 280 300 S300 240 320 300 S340 360 360 300 S380 240 400 300 S420 360 440 300" stroke="var(--ink-black)" style="stroke-width: var(--sw-mid)"/>
+        <path d="M440 300 C470 340 430 420 330 420" stroke="var(--ink-black)" style="stroke-width: var(--sw-mid)"/>
         <!-- Green のポイントを通過 → 緑に切り替わる -->
-        <path d="M330 420 C290 420 240 430 210 460 C180 500 220 560 300 550 S400 520 440 530" stroke="var(--ink-green)" style="stroke-width: var(--sw-4)"/>
+        <path d="M330 420 C290 420 240 430 210 460 C180 500 220 560 300 550 S400 520 440 530" stroke="var(--ink-green)" style="stroke-width: var(--sw-mid)"/>
         <!-- 太くのポイントを通過 → 中から太に切り替わる -->
-        <path d="M440 530 Q465 522 480 502 Q495 480 520 465 C620 420 860 500 980 440 S1050 350 1040 330" stroke="var(--ink-green)" style="stroke-width: var(--sw-8)"/>
+        <path d="M440 530 Q465 522 480 502 Q495 480 520 465 C620 420 860 500 980 440 S1050 350 1040 330" stroke="var(--ink-green)" style="stroke-width: var(--sw-bold)"/>
         <!-- Black のポイントを通過 → 黒に切り替わる -->
-        <path d="M1040 330 C1030 300 1000 270 950 260 C860 245 700 260 584 320" stroke="var(--ink-black)" style="stroke-width: var(--sw-8)"/>
+        <path d="M1040 330 C1030 300 1000 270 950 260 C860 245 700 260 584 320" stroke="var(--ink-black)" style="stroke-width: var(--sw-bold)"/>
       </g>
     </svg>
     <div class="p"></div><div class="p-label">P</div>
@@ -139,7 +140,7 @@
     <div class="minimap" title="ミニマップ">
       <svg viewBox="0 0 2880 2880">
         <!-- 線は最小 1px（世界の 18 = ミニマップの 1px） -->
-        <g style="--sw-4: 18px; --sw-8: 27px">
+        <g style="--sw-mid: 18px; --sw-bold: 24px">
           <use href="#trail" transform="translate(2040 1200)"/>
           <use href="#trail" transform="translate(-840 1200)"/>
         </g>
@@ -188,9 +189,9 @@
     <div class="card">
       <h2>線の太さ（太く・細くのポイントで 1 段階ずつ変わる）</h2>
       <div class="row">
-        <div class="stroke"><svg viewBox="0 0 160 32"><path d="M8 16h144" stroke="var(--ink-black)" stroke-width="2" stroke-linecap="round"/></svg>細 2px</div>
-        <div class="stroke"><svg viewBox="0 0 160 32"><path d="M8 16h144" stroke="var(--ink-black)" stroke-width="4" stroke-linecap="round"/></svg>中 4px（最初の太さ）</div>
-        <div class="stroke"><svg viewBox="0 0 160 32"><path d="M8 16h144" stroke="var(--ink-black)" stroke-width="8" stroke-linecap="round"/></svg>太 8px</div>
+        <div class="stroke"><svg viewBox="0 0 160 32"><path d="M16 16h128" stroke="var(--ink-black)" stroke-width="6" stroke-linecap="round"/></svg>細 6px（点P の直径 14px）</div>
+        <div class="stroke"><svg viewBox="0 0 160 32"><path d="M16 16h128" stroke="var(--ink-black)" stroke-width="12" stroke-linecap="round"/></svg>中 12px（最初の太さ）</div>
+        <div class="stroke"><svg viewBox="0 0 160 32"><path d="M16 16h128" stroke="var(--ink-black)" stroke-width="24" stroke-linecap="round"/></svg>太 24px（点P の直径 32px）</div>
       </div>
     </div>
 
@@ -230,7 +231,7 @@
           <div class="paper">
             <svg viewBox="0 0 720 100">
               <defs>
-                <g id="sample-lines" fill="none" stroke-linecap="round"><path d="M-60 20 C-20 40 20 -10 60 10" stroke="var(--ink-green)" stroke-width="8"/><path d="M-55 -15 C-10 -20 10 30 55 -5" stroke="var(--ink-black)" stroke-width="4"/></g>
+                <g id="sample-lines" fill="none" stroke-linecap="round"><path d="M-60 20 C-20 40 20 -10 60 10" stroke="var(--ink-green)" stroke-width="24"/><path d="M-55 -15 C-10 -20 10 30 55 -5" stroke="var(--ink-black)" stroke-width="12"/></g>
               </defs>
               <g transform="translate(180 42)"><use href="#sample-lines"/><use href="#stamp"/><use href="#i-clear"/></g>
               <g transform="translate(540 42)"><use href="#sample-lines"/><use href="#stamp-touching"/><use href="#i-clear"/></g>

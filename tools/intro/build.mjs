@@ -74,6 +74,16 @@ const list = strokes();
 let d = `M${list[0][0][0]},${list[0][0][1]}` + smooth(list[0]);
 for (let i = 1; i < list.length; i++) d += connector(list[i - 1], list[i]) + smooth(list[i]);
 
+// 書き終わり: 最後の文字から下へ回り込み、2 行目の下を左へ向かう。
+// 点P はこの向きのまま進むので、下線を引くように自己紹介の下を通り、しばらく自己紹介が見える
+{
+  const last = list[list.length - 1], a = last[last.length - 1];
+  const ta = unit(last[last.length - 2], a);
+  const uy = Math.max(...list.filter((s) => s[0][1] > LINE_HEIGHT).flat().map((p) => p[1])) + 4;
+  d += ` C${f(a[0] + ta[0] * 6)},${f(a[1] + ta[1] * 6)} ${f(a[0] + 12)},${f(uy)} ${f(a[0])},${f(uy)}`;
+  d += ` C${f(a[0] - 4)},${f(uy)} ${f(a[0] - 8)},${f(uy)} ${f(a[0] - 12)},${f(uy)}`;
+}
+
 // 表示範囲は座標の最小・最大から決める（制御点も含むので少し広め）
 const nums = [...d.matchAll(/(-?\d*\.?\d+),(-?\d*\.?\d+)/g)].map((m) => [+m[1], +m[2]]);
 const [x0, x1] = [Math.min(...nums.map((p) => p[0])) - 2, Math.max(...nums.map((p) => p[0])) + 2];
