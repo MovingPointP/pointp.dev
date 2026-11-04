@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>pointp.dev デザインモック</title>
+<style>
+  :root {
+    /* primitive: Radix Colors (light) */
+    --sand-1:#fdfdfc; --sand-3:#f1f0ef; --sand-6:#dad9d6; --sand-7:#cfceca; --sand-8:#bcbbb5; --sand-11:#63635e; --sand-12:#21201c;
+    --sky-4:#d1f0fa; --sky-6:#a9daed; --sky-7:#8dcae3;
+    --indigo-12:#1f2d5c; --blue-11:#0d74ce; --tomato-10:#dd4425; --grass-11:#2a7e3b; --amber-11:#ab6400; --amber-9:#ffc53d;
+
+    /* semantic */
+    --color-paper: var(--sand-1);
+    --color-grid-minor: var(--sky-4);
+    --color-grid-major: var(--sky-6);
+    --color-world-edge: var(--sky-7);
+    --color-surface: var(--sand-1);
+    --color-border: var(--sand-6);
+    --color-border-strong: var(--sand-8);
+    --color-text: var(--sand-12);
+    --color-text-muted: var(--sand-11);
+    --color-warning: var(--amber-9);
+    --ink-black: var(--indigo-12); --ink-blue: var(--blue-11); --ink-red: var(--tomato-10); --ink-green: var(--grass-11); --ink-sepia: var(--amber-11);
+    /* 点P・P の文字・ノブ・向きの目盛りは今のインクの色 */
+    --color-current-ink: var(--ink-black);
+
+    --grid-size: 24px;
+    --space-1:4px; --space-2:8px; --space-3:12px; --space-4:16px; --space-6:24px; --space-8:32px;
+    --radius-2:8px; --radius-3:12px; --radius-full:9999px;
+    --shadow-1: 0 1px 2px rgb(33 32 28 / .06), 0 4px 12px rgb(33 32 28 / .06);
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: system-ui, sans-serif; color: var(--color-text); background: var(--sand-3); }
+  h1, h2 { font-weight: 600; }
+  .wrap { max-width: 1200px; overflow-x: auto; margin: 0 auto; padding: var(--space-8) var(--space-4); }
+  .lead { font-size: 13px; color: var(--color-text-muted); }
+
+  /* 本画面 */
+  .screen {
+    position: relative; width: 1168px; height: 640px; overflow: hidden; border-radius: var(--radius-3); box-shadow: var(--shadow-1);
+    background-color: var(--color-paper);
+    background-image:
+      linear-gradient(var(--color-grid-major) 1px, transparent 1px),
+      linear-gradient(90deg, var(--color-grid-major) 1px, transparent 1px),
+      linear-gradient(var(--color-grid-minor) 1px, transparent 1px),
+      linear-gradient(90deg, var(--color-grid-minor) 1px, transparent 1px);
+    background-size: calc(var(--grid-size) * 5) calc(var(--grid-size) * 5), calc(var(--grid-size) * 5) calc(var(--grid-size) * 5), var(--grid-size) var(--grid-size), var(--grid-size) var(--grid-size);
+  }
+  .screen svg.lines { position: absolute; inset: 0; width: 100%; height: 100%; --sw-4: 4px; --sw-8: 8px; }
+  .edge { position: absolute; top: 0; bottom: 0; left: calc(var(--grid-size) * 35); border-left: 2px solid var(--color-world-edge); }
+  .p { position: absolute; left: 50%; top: 50%; width: 14px; height: 14px; margin: -7px; border-radius: var(--radius-full); background: var(--color-current-ink); box-shadow: 0 0 0 3px var(--color-paper); }
+  .p-label { position: absolute; left: calc(50% + 10px); top: calc(50% - 26px); font: italic 600 16px/1 Georgia, serif; color: var(--color-current-ink); }
+  .pt { position: absolute; width: 40px; height: 40px; margin: -20px; border-radius: var(--radius-full); background: var(--color-paper); border: 1.5px solid var(--color-text-muted); display: grid; place-items: center; color: var(--color-text-muted); }
+  .pt::after { content: ""; position: absolute; inset: 3px; border-radius: var(--radius-full); border: .75px dashed var(--color-text-muted); }
+  .pt svg { width: 22px; height: 22px; }
+  .pt svg.warn { position: absolute; right: -10px; top: -10px; width: 18px; height: 18px; }
+  .minimap { position: absolute; top: var(--space-4); right: var(--space-4); width: 160px; aspect-ratio: 1; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-2); box-shadow: var(--shadow-1); overflow: hidden; }
+  .minimap svg { width: 100%; height: 100%; display: block; }
+  /* 台の直径 128px（viewBox 200 の中の r=64）、ノブ 44px。台の下端は画面の下から 24px */
+  .joystick { position: absolute; left: 50%; bottom: -12px; transform: translateX(-50%); width: 200px; height: 200px; overflow: visible; }
+
+  /* 一覧 */
+  .sheet { display: grid; gap: var(--space-6); margin-top: var(--space-8); }
+  .card { background: var(--color-surface); border-radius: var(--radius-3); padding: var(--space-6); box-shadow: var(--shadow-1); }
+  .card h2 { margin: 0 0 var(--space-4); font-size: 16px; }
+  .card h2 + .row + h2 { margin-top: var(--space-6); }
+  .row { display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: flex-start; }
+  .caption { font-size: 12px; color: var(--color-text-muted); }
+  .sw { width: 120px; font-size: 12px; color: var(--color-text-muted); }
+  .sw i { display: block; height: 48px; border-radius: var(--radius-2); border: 1px solid var(--color-border); margin-bottom: var(--space-1); }
+  .stroke { width: 160px; font-size: 12px; color: var(--color-text-muted); }
+  .stroke svg { width: 100%; height: 32px; }
+  .joy-pair { display: flex; gap: var(--space-2); margin-bottom: var(--space-2); }
+  .joy-pair svg { width: 180px; height: 180px; overflow: visible; }
+  .paper { width: 720px; padding: var(--space-2) var(--space-4); margin-bottom: var(--space-2); border-radius: var(--radius-2); border: 1px solid var(--color-border); background-color: var(--color-paper); background-image: linear-gradient(var(--color-grid-minor) 1px, transparent 1px), linear-gradient(90deg, var(--color-grid-minor) 1px, transparent 1px); background-size: var(--grid-size) var(--grid-size); }
+  .paper svg { width: 100%; display: block; color: var(--color-text-muted); }
+  .stack { display: grid; gap: var(--space-6); }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <!-- ジョイスティック -->
+    <filter id="knob-shadow" x="-50%" y="-50%" width="200%" height="200%"><feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#21201c" flood-opacity=".28"/></filter>
+    <circle id="plate" cx="100" cy="100" r="64" fill="var(--color-surface)" stroke="var(--sand-7)"/>
+    <g id="axes" stroke="var(--color-grid-major)" stroke-width="1.5"><path d="M100 50V150M50 100H150"/></g>
+    <g id="knob-on"><circle cx="129.5" cy="79.3" r="22" fill="var(--color-current-ink)" filter="url(#knob-shadow)"/><circle cx="129.5" cy="79.3" r="14" fill="none" stroke="var(--sand-1)" stroke-opacity=".3" stroke-width="1.5"/></g>
+    <g id="knob-off"><circle cx="100" cy="100" r="22" fill="var(--color-current-ink)" filter="url(#knob-shadow)"/><circle cx="100" cy="100" r="14" fill="none" stroke="var(--sand-1)" stroke-opacity=".3" stroke-width="1.5"/></g>
+
+    <!-- ポイント（スタンプ）。普段は塗り 100%、点P が触れている間は 60% -->
+    <g id="stamp" fill="none" stroke="var(--color-text-muted)"><circle r="20" fill="var(--color-paper)" stroke-width="1.5"/><circle r="16" stroke-width=".75" stroke-dasharray="2 2.5"/></g>
+    <g id="stamp-touching" fill="none" stroke="var(--color-text-muted)"><circle r="20" fill="var(--color-paper)" fill-opacity=".6" stroke-width="1.5"/><circle r="16" stroke-width=".75" stroke-dasharray="2 2.5"/></g>
+    <g id="warn"><path d="M0 -8.5L8 5.5H-8z" fill="var(--color-warning)" stroke="var(--sand-12)" stroke-width="1.25" stroke-linejoin="round"/><path d="M0 -3v3.5" stroke="var(--sand-12)" stroke-width="1.5" stroke-linecap="round"/><circle cy="3" r=".9" fill="var(--sand-12)"/></g>
+
+    <!-- アイコンは中心 (0,0)・24px 四方・線 2px・端は丸 -->
+    <g id="i-thicker" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M-9 0h18" stroke-width="3.5"/><path d="M0 -4v-5M-2.5 -6.5L0 -9l2.5 2.5M0 4v5M-2.5 6.5L0 9l2.5 -2.5" stroke-width="1.5"/></g>
+    <g id="i-thinner" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M-9 0h18" stroke-width="1.5"/><path d="M0 -9.5v5M-2.5 -7L0 -4.5l2.5 -2.5M0 9.5v-5M-2.5 7L0 4.5l2.5 2.5" stroke-width="1.5"/></g>
+    <g id="i-faster" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M-8 5a9 9 0 0 1 16 0"/><path d="M0 4l5 -6"/><circle cy="4" r="1.5" fill="currentColor"/></g>
+    <g id="i-slower" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M-8 5a9 9 0 0 1 16 0"/><path d="M0 4l-5 -6"/><circle cy="4" r="1.5" fill="currentColor"/></g>
+    <g id="i-clear" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M-7 -5h14M-2 -5v-2h4v2M-5.5 -5l1 12h9l1 -12"/><path d="M-1.5 -1v5M1.5 -1v5" stroke-width="1.5"/></g>
+    <g id="i-save" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M0 -7v10M-4.5 -1.5L0 3l4.5 -4.5M-7 7h14"/></g>
+  </defs>
+</svg>
+
+<div class="wrap">
+  <h1>pointp.dev デザインモック</h1>
+  <p class="lead">決まった内容の見た目の見本。仕様は <a href="spec.md">spec.md</a> を参照。線や配置はダミー。</p>
+
+  <div class="screen">
+    <div class="edge" title="世界の境目"></div>
+    <!-- 一筆書きの線。最後が点P（画面の中心）につながる。ミニマップも同じ線を縮小して使う -->
+    <svg class="lines" viewBox="0 0 1168 640">
+      <g id="trail" fill="none" stroke-linecap="round" stroke-linejoin="round">
+        <!-- 自己紹介の代わりのダミーの手書き線（Black・中） -->
+        <path d="M120 300 C140 240 160 240 160 300 S180 360 200 300 S220 240 240 300 S260 360 280 300 S300 240 320 300 S340 360 360 300 S380 240 400 300 S420 360 440 300" stroke="var(--ink-black)" style="stroke-width: var(--sw-4)"/>
+        <path d="M440 300 C470 340 430 420 330 420" stroke="var(--ink-black)" style="stroke-width: var(--sw-4)"/>
+        <!-- Green のポイントを通過 → 緑に切り替わる -->
+        <path d="M330 420 C290 420 240 430 210 460 C180 500 220 560 300 550 S400 520 440 530" stroke="var(--ink-green)" style="stroke-width: var(--sw-4)"/>
+        <!-- 太くのポイントを通過 → 中から太に切り替わる -->
+        <path d="M440 530 Q465 522 480 502 Q495 480 520 465 C620 420 860 500 980 440 S1050 350 1040 330" stroke="var(--ink-green)" style="stroke-width: var(--sw-8)"/>
+        <!-- Black のポイントを通過 → 黒に切り替わる -->
+        <path d="M1040 330 C1030 300 1000 270 950 260 C860 245 700 260 584 320" stroke="var(--ink-black)" style="stroke-width: var(--sw-8)"/>
+      </g>
+    </svg>
+    <div class="p"></div><div class="p-label">P</div>
+
+    <!-- ポイント -->
+    <div class="pt" style="left:330px;top:420px" title="Green"><svg viewBox="-12 -12 24 24"><circle r="6" fill="var(--ink-green)"/></svg></div>
+    <div class="pt" style="left:440px;top:530px" title="太く"><svg viewBox="-12 -12 24 24"><use href="#i-thicker"/></svg></div>
+    <div class="pt" style="left:1040px;top:330px" title="Black"><svg viewBox="-12 -12 24 24"><circle r="6" fill="var(--ink-black)"/></svg></div>
+    <div class="pt" style="left:140px;top:115px" title="Blue"><svg viewBox="-12 -12 24 24"><circle r="6" fill="var(--ink-blue)"/></svg></div>
+    <div class="pt" style="left:760px;top:150px" title="加速"><svg viewBox="-12 -12 24 24"><use href="#i-faster"/></svg></div>
+    <div class="pt" style="left:1090px;top:580px" title="全消去"><svg viewBox="-12 -12 24 24"><use href="#i-clear"/></svg><svg class="warn" viewBox="-9 -10 18 18"><use href="#warn"/></svg></div>
+    <div class="pt" style="left:100px;top:590px" title="保存"><svg viewBox="-12 -12 24 24"><use href="#i-save"/></svg></div>
+
+    <!-- ミニマップ: 世界は 2880 四方。画面の左上は世界の (2040, 1200)。画面の x=840 が世界の右端（= 左端）-->
+    <div class="minimap" title="ミニマップ">
+      <svg viewBox="0 0 2880 2880">
+        <!-- 線は最小 1px（世界の 18 = ミニマップの 1px） -->
+        <g style="--sw-4: 18px; --sw-8: 27px">
+          <use href="#trail" transform="translate(2040 1200)"/>
+          <use href="#trail" transform="translate(-840 1200)"/>
+        </g>
+        <!-- 見えている範囲。世界の端をまたぐので左右に分かれる -->
+        <g fill="none" stroke="var(--color-text-muted)" stroke-width="1" stroke-dasharray="2 2">
+          <rect x="2040" y="1200" width="840" height="640" vector-effect="non-scaling-stroke"/>
+          <rect x="0" y="1200" width="328" height="640" vector-effect="non-scaling-stroke"/>
+        </g>
+        <!-- ポイント（種類によらず灰色） -->
+        <g fill="var(--color-border-strong)">
+          <circle cx="2370" cy="1620" r="36"/><circle cx="2480" cy="1730" r="36"/><circle cx="200" cy="1530" r="36"/><circle cx="2180" cy="1315" r="36"/><circle cx="2800" cy="1350" r="36"/><circle cx="250" cy="1780" r="36"/><circle cx="2140" cy="1790" r="36"/>
+          <circle cx="400" cy="400" r="36"/><circle cx="1300" cy="350" r="36"/><circle cx="2500" cy="500" r="36"/><circle cx="700" cy="1100" r="36"/>
+          <circle cx="1500" cy="1300" r="36"/><circle cx="300" cy="2400" r="36"/><circle cx="1200" cy="2200" r="36"/><circle cx="2000" cy="2600" r="36"/>
+        </g>
+        <circle cx="2624" cy="1520" r="50" fill="var(--color-current-ink)" stroke="var(--color-paper)" stroke-width="2" vector-effect="non-scaling-stroke"/>
+      </svg>
+    </div>
+
+    <!-- 指を離した状態。ノブは中心に戻り、向きの目盛りだけが残る -->
+    <svg class="joystick" viewBox="0 0 200 200"><use href="#plate"/><g class="ticks" data-active="-35"></g><use href="#axes"/><use href="#knob-off"/></svg>
+  </div>
+
+  <div class="sheet">
+    <div class="card">
+      <h2>色（Radix Colors の light を元にする）</h2>
+      <div class="row">
+        <div class="sw"><i style="background:var(--color-paper)"></i>紙・台 sand-1</div>
+        <div class="sw"><i style="background:var(--color-grid-minor)"></i>方眼（細） sky-4</div>
+        <div class="sw"><i style="background:var(--color-grid-major)"></i>方眼（5 マスごと）・軸 sky-6</div>
+        <div class="sw"><i style="background:var(--color-world-edge)"></i>世界の境目 sky-7（2px）</div>
+        <div class="sw"><i style="background:var(--color-border)"></i>台の枠線 sand-6</div>
+        <div class="sw"><i style="background:var(--color-border-strong)"></i>目盛り・ミニマップのポイント sand-8</div>
+        <div class="sw"><i style="background:var(--color-text-muted)"></i>スタンプ・アイコン sand-11</div>
+        <div class="sw"><i style="background:var(--color-warning)"></i>全消去の注意マーク amber-9</div>
+      </div>
+      <h2>インク（線の色）。点P・P の文字・ノブ・向きの目盛りは今のインクの色</h2>
+      <div class="row">
+        <div class="sw"><i style="background:var(--ink-black)"></i>Black indigo-12（最初の色）</div>
+        <div class="sw"><i style="background:var(--ink-blue)"></i>Blue blue-11</div>
+        <div class="sw"><i style="background:var(--ink-red)"></i>Red tomato-10</div>
+        <div class="sw"><i style="background:var(--ink-green)"></i>Green grass-11</div>
+        <div class="sw"><i style="background:var(--ink-sepia)"></i>Sepia amber-11</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>線の太さ（太く・細くのポイントで 1 段階ずつ変わる）</h2>
+      <div class="row">
+        <div class="stroke"><svg viewBox="0 0 160 32"><path d="M8 16h144" stroke="var(--ink-black)" stroke-width="2" stroke-linecap="round"/></svg>細 2px</div>
+        <div class="stroke"><svg viewBox="0 0 160 32"><path d="M8 16h144" stroke="var(--ink-black)" stroke-width="4" stroke-linecap="round"/></svg>中 4px（最初の太さ）</div>
+        <div class="stroke"><svg viewBox="0 0 160 32"><path d="M8 16h144" stroke="var(--ink-black)" stroke-width="8" stroke-linecap="round"/></svg>太 8px</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>ジョイスティック：分度器（左: 指を離したとき / 右: 操作中）</h2>
+      <div class="joy-pair">
+        <svg viewBox="0 0 200 200"><use href="#plate"/><g class="ticks" data-active="-35"></g><use href="#axes"/><use href="#knob-off"/></svg>
+        <svg viewBox="0 0 200 200"><use href="#plate"/><g class="ticks" data-active="-35"></g><use href="#axes"/><use href="#knob-on"/></svg>
+      </div>
+      <div class="caption">点P が進む向きに近い目盛りが、今のインクの色で太くなる（指を離しても残る）。台の直径 128px、ノブの直径 44px</div>
+    </div>
+
+    <div class="card">
+      <h2>ポイント：スタンプ</h2>
+      <div class="stack">
+        <div>
+          <div class="paper">
+            <svg viewBox="0 0 720 88">
+              <g transform="translate(36 36)"><use href="#stamp"/><circle r="6" fill="var(--ink-black)"/></g>
+              <g transform="translate(96 36) rotate(-6)"><use href="#stamp"/><circle r="6" fill="var(--ink-blue)"/></g>
+              <g transform="translate(156 36) rotate(4)"><use href="#stamp"/><circle r="6" fill="var(--ink-red)"/></g>
+              <g transform="translate(216 36) rotate(-3)"><use href="#stamp"/><circle r="6" fill="var(--ink-green)"/></g>
+              <g transform="translate(276 36) rotate(6)"><use href="#stamp"/><circle r="6" fill="var(--ink-sepia)"/></g>
+              <g transform="translate(348 36) rotate(-5)"><use href="#stamp"/><use href="#i-thicker"/></g>
+              <g transform="translate(408 36) rotate(3)"><use href="#stamp"/><use href="#i-thinner"/></g>
+              <g transform="translate(480 36) rotate(5)"><use href="#stamp"/><use href="#i-faster"/></g>
+              <g transform="translate(540 36) rotate(-6)"><use href="#stamp"/><use href="#i-slower"/></g>
+              <g transform="translate(612 36) rotate(-3)"><use href="#stamp"/><use href="#i-clear"/></g>
+              <g transform="translate(629 18)"><use href="#warn"/></g>
+              <g transform="translate(684 36) rotate(4)"><use href="#stamp"/><use href="#i-save"/></g>
+              <g font-size="11" fill="var(--color-text-muted)" text-anchor="middle"><text x="156" y="82">色（Black・Blue・Red・Green・Sepia）</text><text x="378" y="82">太く・細く</text><text x="510" y="82">加速・減速</text><text x="612" y="82">全消去</text><text x="684" y="82">保存</text></g>
+            </svg>
+          </div>
+          <div class="caption">1 つずつ少し傾けて、手で押した感じを出す。全消去は右上に注意マークを付ける</div>
+        </div>
+        <div>
+          <div class="paper">
+            <svg viewBox="0 0 720 100">
+              <defs>
+                <g id="sample-lines" fill="none" stroke-linecap="round"><path d="M-60 20 C-20 40 20 -10 60 10" stroke="var(--ink-green)" stroke-width="8"/><path d="M-55 -15 C-10 -20 10 30 55 -5" stroke="var(--ink-black)" stroke-width="4"/></g>
+              </defs>
+              <g transform="translate(180 42)"><use href="#sample-lines"/><use href="#stamp"/><use href="#i-clear"/></g>
+              <g transform="translate(540 42)"><use href="#sample-lines"/><use href="#stamp-touching"/><use href="#i-clear"/></g>
+              <g font-size="11" fill="var(--color-text-muted)" text-anchor="middle"><text x="180" y="95">普段（塗り 100%、線より上）</text><text x="540" y="95">点P が触れている間（塗り 60%）</text></g>
+            </svg>
+          </div>
+          <div class="caption">点P が離れたら、0.3 秒ほどかけて 100% に戻る</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+  // 分度器の目盛り（5° ごと、15° ごと・45° ごとは長く）。data-active の角度に近い目盛りを今のインクの色で太くする
+  for (const g of document.querySelectorAll(".ticks")) {
+    const active = Number(g.dataset.active);
+    let html = "";
+    for (let a = 0; a < 360; a += 5) {
+      const r = a * Math.PI / 180, inner = a % 45 === 0 ? 54 : a % 15 === 0 ? 58 : 60.5;
+      const on = Math.abs(((a - active + 540) % 360) - 180) <= 10;
+      const color = on ? "var(--color-current-ink)" : "var(--color-border-strong)";
+      html += `<path d="M${100 + Math.cos(r) * inner} ${100 + Math.sin(r) * inner}L${100 + Math.cos(r) * 64} ${100 + Math.sin(r) * 64}" stroke="${color}" stroke-width="${on ? 2.5 : 1}"/>`;
+    }
+    g.innerHTML = html;
+  }
+</script>
+</body>
+</html>
