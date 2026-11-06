@@ -1,13 +1,17 @@
 // 自己紹介「I'm pointp / Always moving」の一筆書きの SVG を作る
-// Hershey フォント cursive の文字の形を使い、ペンを離す所（i の点・t の横棒・アポストロフィ・単語や行の間）を
-// 曲線でつないで 1 本のパスにする。仕様は docs/spec.md の「最初の流れ（自己紹介）」
+// Hershey フォント cursive の文字の形を元に、読みにくい文字を readable.json で差し替え、
+// 残りのペンを離す所（単語や行の間）を曲線でつないで 1 本のパスにする。仕様は docs/spec.md の「最初の流れ（自己紹介）」
 // 使い方: node tools/intro/build.mjs → tools/intro/intro.svg
 import { readFileSync, writeFileSync } from "node:fs";
 
-const { chars } = JSON.parse(readFileSync(new URL("./cursive.json", import.meta.url), "utf8"));
+const load = (name) => JSON.parse(readFileSync(new URL(name, import.meta.url), "utf8"));
+const readable = load("./readable.json");
+const chars = { ...load("./cursive.json").chars, ...readable.chars };
+// 文字の組ごとの間隔の調整（例: { po: -3 }）
+const kerning = readable.kerning.pairs;
 
-// [文字列, 行の書き始めの x]。2 行目は右へずらす
-const lines = [["I'm pointp", 0], ["Always moving", 60]];
+// [文字の並び, 行の書き始めの x]。2 行目は右へずらす。I' はアポストロフィを含めて 1 文字として書く
+const lines = [[["I'", ..."m pointp"], 0], [[..."Always moving"], 60]];
 const LINE_HEIGHT = 40;
 const SPACE = 10;
 // フォントの文字幅（o）から送り幅への倍率。hersheytext の描画に合わせる
@@ -18,18 +22,29 @@ function strokes() {
   const list = [];
   let space = false;
   lines.forEach(([text, x0], row) => {
-    let x = x0, newLine = row > 0;
+    let x = x0, newLine = row > 0, prev = "", exitHigh = false, exitLow = false;
     const y = row * LINE_HEIGHT;
     for (const ch of text) {
-      if (ch === " ") { x += SPACE; space = true; continue; }
+      if (ch === " ") { x += SPACE; space = true; prev = ""; exitHigh = exitLow = false; continue; }
+      x += kerning[prev + ch] || 0;
+      prev = ch;
       const c = chars[ch];
-      for (const part of c.d.split("M").filter(Boolean)) {
-        const pts = part.replace("L", " ").trim().split(/\s+/).map((p) => p.split(",").map(Number)).map(([px, py]) => [px + x, py + y]);
+      const parts = c.d.split("M").filter(Boolean).map((part) => part.replace("L", " ").trim().split(/\s+/).map((p) => p.split(",").map(Number)));
+      // 前の文字がてっぺんの高さで終わったら（o・v・w のあと）、下からの入りの線を省き、上から書き始める
+      if (exitHigh) while (parts[0].length > 1 && parts[0][0][1] > 14.5) parts[0].shift();
+      // 前の文字が下で払って終わったら、入りの線の書き始めの点を省き、前の払いからそのまま入りの線へ流す
+      // （右上がりの線どうしを短い横線でつなぐと、ジグザグに折れるため）
+      if (exitLow && !newLine && parts[0].length > 1 && parts[0][0][1] >= 16.5) parts[0].shift();
+      for (const rel of parts) {
+        const pts = rel.map(([px, py]) => [px + x, py + y]);
         pts.wordStart = space;
         pts.newLine = newLine;
         space = newLine = false;
         list.push(pts);
       }
+      const exitY = parts[parts.length - 1].at(-1)[1];
+      exitHigh = exitY <= 15;
+      exitLow = exitY >= 16.5;
       x += Number(c.o) * ADVANCE;
     }
   });
