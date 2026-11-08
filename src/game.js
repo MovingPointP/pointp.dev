@@ -83,11 +83,15 @@ export class Game {
     if (this.phase === "intro") this.#writeIntro();
     else if (this.phase !== "rest") this.#move(dt);
     for (const hook of this.hooks) hook(dt);
-    // ノブは指を離すと中心へ戻る（時間で計算する）
+    // ノブは指を離すと中心へ戻る（時間で計算する）。手がかりを見せている間は、その位置にする
     if (!this.joystick.touching) {
-      const k = Math.exp(-dt / KNOB_RETURN);
-      this.knob[0] *= k; this.knob[1] *= k;
-      if (Math.hypot(this.knob[0], this.knob[1]) < 0.05) this.knob[0] = this.knob[1] = 0;
+      if (this.knobOverride) {
+        this.knob[0] = this.knobOverride[0]; this.knob[1] = this.knobOverride[1];
+      } else {
+        const k = Math.exp(-dt / KNOB_RETURN);
+        this.knob[0] *= k; this.knob[1] *= k;
+        if (Math.hypot(this.knob[0], this.knob[1]) < 0.05) this.knob[0] = this.knob[1] = 0;
+      }
       this.joystick.setKnob(this.knob[0], this.knob[1]);
     }
     if (this.trail.compactIfNeeded()) { this.tiles.clear(); this.minimap.redraw(); }

@@ -1,5 +1,6 @@
 // pointp.dev のトップページ。仕様は docs/spec.md
 import { Game } from "./game.js";
+import { Hint } from "./hint.js";
 import { Points } from "./points.js";
 
 const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -23,6 +24,7 @@ if (game.playable) {
   const points = new Points(game, flash);
   (window.requestIdleCallback ?? setTimeout)(() => points.place());
   game.onPlay = () => points.place();
+  new Hint(game);
 }
 
 addEventListener("resize", () => game.resize());

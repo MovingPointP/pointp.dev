@@ -6,20 +6,27 @@
 <title>pointp.dev</title>
 <meta name="color-scheme" content="light">
 <meta name="theme-color" content="#fdfdfc">
-<link rel="stylesheet" href="style.E423YPZZ.css">
-<script type="module" src="main.R4P4DUFY.js"></script>
+<link rel="stylesheet" href="style.OUZRFJOF.css">
+<script type="module" src="main.4TW2UY6O.js"></script>
 </head>
 <body>
-<canvas class="world"></canvas>
-<div class="flash"></div>
+<!-- 画面には見えない見出しと説明（スクリーンリーダー向け。絵や線は Canvas なので、そのままでは伝わらない） -->
+<h1 class="visually-hidden">I'm pointp, always moving</h1>
+<p class="visually-hidden" tabindex="0">A point P that never stops draws a single line on graph paper. Steer it by dragging the protractor joystick at the bottom of the screen with a mouse or a finger. There is no keyboard control.</p>
 
-<div class="minimap ui">
+<!-- JavaScript が動かない環境では、自己紹介の字を静かな絵として見せる -->
+<noscript><img class="noscript-intro" src="intro.svg" alt="I'm pointp, always moving"></noscript>
+
+<canvas class="world" aria-hidden="true"></canvas>
+<div class="flash" aria-hidden="true"></div>
+
+<div class="minimap ui" aria-hidden="true">
   <canvas class="minimap-lines"></canvas>
   <canvas class="minimap-overlay"></canvas>
 </div>
 
 <!-- 分度器のジョイスティック。目盛りは joystick.js で作る -->
-<svg class="joystick ui" viewBox="0 0 200 200">
+<svg class="joystick ui" viewBox="0 0 200 200" role="img" aria-label="Joystick: drag to steer point P">
   <defs>
     <filter id="knob-shadow" x="-50%" y="-50%" width="200%" height="200%">
       <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#21201c" flood-opacity="0.28"/>
