@@ -48,7 +48,7 @@ function render(html, width, height, out) {
 
 const iconPage = (size) => `<!doctype html><html><head><style>html,body{margin:0;width:${size}px;height:${size}px;overflow:hidden}svg{display:block;width:${size}px;height:${size}px}</style></head><body>${icon}</body></html>`;
 render(iconPage(180), 180, 180, new URL("apple-touch-icon.png", publicDir));
-const png32 = new URL("favicon-32.png", new URL(`file:///${work.replaceAll("\\", "/")}/`));
+const png32 = pathToFileURL(join(work, "favicon-32.png"));
 render(iconPage(32), 32, 32, png32);
 render(ogp, 1200, 630, new URL(OGP_NAME, publicDir));
 
