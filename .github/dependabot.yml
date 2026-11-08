@@ -10,3 +10,14 @@ updates:
       timezone: "Asia/Tokyo"
     commit-message:
       prefix: "chore"
+
+  # ビルドに使う esbuild（開発時だけの依存）。脆弱性の修正と新しい版を PR で知らせる
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Tokyo"
+    commit-message:
+      prefix: "chore"

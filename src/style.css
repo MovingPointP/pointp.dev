@@ -1,0 +1,5 @@
+/* 仕様とデザイントークンは docs/spec.md の「デザイン・配色」 */
+html {
+  color-scheme: light;
+  background: #fdfdfc;
+}
