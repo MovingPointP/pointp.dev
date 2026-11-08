@@ -1,5 +1,6 @@
 // pointp.dev のトップページ。仕様は docs/spec.md
 import { Game } from "./game.js";
+import { Points } from "./points.js";
 
 const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const canvas = document.querySelector(".world");
@@ -10,6 +11,20 @@ const game = new Game({
   reduceMotion,
 });
 
+// 保存できたとき、紙がシャッターのように一瞬白く光る（すぐ明るくなり、ゆっくり戻る）
+const flashLayer = document.querySelector(".flash");
+const flash = () => flashLayer.animate(
+  [{ opacity: 0 }, { opacity: reduceMotion ? 0.45 : 0.85, offset: 0.12 }, { opacity: 0 }],
+  { duration: reduceMotion ? 300 : 450, easing: "cubic-bezier(0.16, 1, 0.3, 1)" },
+);
+
+// ポイントは、自己紹介を書いている間の空いた時間に置く（遊べる大きさの画面だけ）
+if (game.playable) {
+  const points = new Points(game, flash);
+  (window.requestIdleCallback ?? setTimeout)(() => points.place());
+  game.onPlay = () => points.place();
+}
+
 addEventListener("resize", () => game.resize());
 // devicePixelRatio が変わったとき（ブラウザの拡大縮小、解像度の違うモニターへの移動）は描き直す
 (function watchPixelRatio() {
@@ -18,14 +33,22 @@ addEventListener("resize", () => game.resize());
 // キャンバスの中身が失われたら、区画とミニマップを座標データから作り直す
 canvas.addEventListener("contextrestored", () => { game.tiles.clear(); game.minimap.redraw(); game.render(); });
 
-// 確認用（自分の PC で開いたときだけ）: ?t=秒 で、その時刻まで一定の間隔で進めた場面を描いて止まる
+// 確認用（自分の PC で開いたときだけ）
+// ?t=秒: その時刻まで一定の間隔で進めた場面を描いて止まる。?dir=角度: 書き終わったあとの向き
+// ?demo=種類: 書き終わったとき、その種類のポイントを点P の少し先に置く（反応を確かめる）
 const params = new URLSearchParams(location.search);
 if (["localhost", "127.0.0.1"].includes(location.hostname) && params.has("t")) {
   game.resize();
-  if (params.has("dir")) {
-    const a = +params.get("dir") * Math.PI / 180;
-    game.onPlay = () => { game.dir = [Math.cos(a), Math.sin(a)]; game.turned = true; };
-  }
+  const onPlay = game.onPlay;
+  game.onPlay = () => {
+    onPlay?.();
+    if (params.has("dir")) {
+      const a = +params.get("dir") * Math.PI / 180;
+      game.dir = [Math.cos(a), Math.sin(a)]; game.turned = true;
+    }
+    const demo = params.get("demo"), pt = game.points.list?.find((p) => p.kind === demo || p.ink === demo);
+    if (pt) { pt.x = game.p[0] + game.dir[0] * 160; pt.y = game.p[1] + game.dir[1] * 160; }
+  };
   for (let t = 0; t < +params.get("t"); t += 1 / 60) game.step(1 / 60);
   game.render();
 } else {

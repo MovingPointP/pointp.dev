@@ -41,7 +41,7 @@ export class Game {
     this.dir = [1, 0];
     this.turned = false;
     this.knob = [0, 0];
-    this.points = []; // ポイント（スタンプ）。points.js で置く
+    this.points = null; // ポイント（スタンプ）。points.js が入れる
     this.hooks = []; // 毎フレーム呼ぶ追加の処理（ポイントなど）
 
     // 自己紹介を書き始める

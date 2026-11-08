@@ -36,6 +36,15 @@ body {
   display: block;
 }
 
+/* 保存できたとき、紙がシャッターのように一瞬白く光る（main.js が animate する） */
+.flash {
+  position: fixed;
+  inset: 0;
+  background: #fff;
+  opacity: 0;
+  pointer-events: none;
+}
+
 /* ジョイスティックとミニマップは、自己紹介を書き終わってから、カメラが寄るのと同じ 1 秒で現れる */
 .ui {
   opacity: 0;
