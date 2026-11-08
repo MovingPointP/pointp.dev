@@ -358,7 +358,7 @@ impeccable の harden で洗い出した。本番の実装で入れる。
 - アイコンと OGP 画像は `tools/assets/build.mjs`（`npm run assets`）で、Chrome のヘッドレスを使って作り、`src/public/` へ書き出す（開発時だけ）
 - 書体は、STIX Two Text の斜体 600 を Google Fonts から「P」1 文字だけに絞って取り出したもの（約 1KB）。CSS の中の書体名はサイト独自の名前（`pointp P`）にする（STIX Fonts は IEEE の商標のため。予約されたフォント名は「TM Math」だけで、対象外）
 - `package-lock.json` をコミットし、`npm ci` で入れる（いつも同じ版が入るように）
-- 開発中の確認用サーバー（esbuild の serve）は、自分の PC の中だけで動かす（ネットワークへ公開しない）。スマホの実機で確かめるときは、ビルドした `html/` を `compose.dev.yaml` の Nginx で配信する
+- 開発中の確認用サーバー（esbuild の serve）は、自分の PC の中だけで動かす（ネットワークへ公開しない）。書き出し先は `.dev/`（Git に入れない）にし、コミットする `html/` を汚さない。スマホの実機で確かめるときは、ビルドした `html/` を `compose.dev.yaml` の Nginx で配信する
 - Dependabot に npm を足し、脆弱性の修正と新しい版をプルリクエストで受け取る。GitHub の Dependabot alerts もオンにする
 - GitHub Actions を使うようになったら、Dependabot に `github-actions` も足す
 

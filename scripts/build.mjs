@@ -2,16 +2,20 @@
 // - JS と CSS は esbuild でまとめ、ファイル名に中身のハッシュを入れる（1 年キャッシュするため）
 // - HTML の中のファイル名は、このスクリプトで書き換える
 // - src/public/ のファイルは、そのまま html/ へ写す
-// 使い方: node scripts/build.mjs（ビルド） / node scripts/build.mjs --serve（開発用。自分の PC の中だけで配信）
-import { cp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
-import { basename } from "node:path";
-import { fileURLToPath } from "node:url";
+// - 一時フォルダに書き出し、成功したら html/ の中身と入れ替える（失敗しても html/ を壊さない）
+// 使い方: node scripts/build.mjs（ビルド） / node scripts/build.mjs --serve（開発用。.dev/ に書き出し、自分の PC の中だけで配信）
+import { cp, mkdir, mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { basename, join } from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import * as esbuild from "esbuild";
 
 const root = new URL("../", import.meta.url);
 const src = new URL("src/", root);
-const out = new URL("html/", root);
+const html = new URL("html/", root);
 const serve = process.argv.includes("--serve");
+// 開発用は、コミットする html/ を汚さないよう .dev/ に書き出す
+const out = serve ? new URL(".dev/", root) : pathToFileURL(`${await mkdtemp(join(tmpdir(), "pointp-build-"))}/`);
 
 const options = {
   entryPoints: [fileURLToPath(new URL("main.js", src)), fileURLToPath(new URL("style.css", src))],
@@ -54,11 +58,10 @@ async function writeHtml(metafile) {
   await writeFile(new URL("index.html", out), html);
 }
 
-// 前回のハッシュ付きのファイルが残らないように、html/ を空にしてから書き出す
 await rm(out, { recursive: true, force: true });
 await mkdir(out, { recursive: true });
-// .gitkeep などドットで始まるファイルは写さない（Nginx でも 404 にする）
-await cp(new URL("public/", src), out, { recursive: true, filter: (from) => !basename(from).startsWith(".") });
+// .gitkeep などドットで始まるものは写さない（Nginx でも 404 にする）。.well-known/ だけは写す
+await cp(new URL("public/", src), out, { recursive: true, filter: (from) => { const name = basename(from); return !name.startsWith(".") || name === ".well-known"; } });
 
 if (serve) {
   const ctx = await esbuild.context(options);
@@ -67,5 +70,13 @@ if (serve) {
   const { port } = await ctx.serve({ host: "127.0.0.1", port: 8000, servedir: fileURLToPath(out) });
   console.log(`http://127.0.0.1:${port}/`);
 } else {
-  await esbuild.build(options);
+  try {
+    await esbuild.build(options);
+    // 前回のハッシュ付きのファイルが残らないように、html/ を空にしてから入れる（フォルダ自体は残す。マウントが外れないように）
+    await mkdir(html, { recursive: true });
+    for (const name of await readdir(html)) await rm(new URL(name, html), { recursive: true, force: true });
+    await cp(out, html, { recursive: true });
+  } finally {
+    await rm(out, { recursive: true, force: true });
+  }
 }
