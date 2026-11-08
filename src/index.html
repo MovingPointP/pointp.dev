@@ -10,5 +10,27 @@
 <script type="module" src="main.js"></script>
 </head>
 <body>
+<canvas class="world"></canvas>
+
+<div class="minimap ui">
+  <canvas class="minimap-lines"></canvas>
+  <canvas class="minimap-overlay"></canvas>
+</div>
+
+<!-- 分度器のジョイスティック。目盛りは joystick.js で作る -->
+<svg class="joystick ui" viewBox="0 0 200 200">
+  <defs>
+    <filter id="knob-shadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#21201c" flood-opacity="0.28"/>
+    </filter>
+  </defs>
+  <circle class="plate" cx="100" cy="100" r="64" fill="#fdfdfc" stroke="#cfceca"/>
+  <g class="ticks"></g>
+  <path d="M100 50V150M50 100H150" stroke="#a9daed" stroke-width="1.5"/>
+  <g class="knob">
+    <circle class="knob-fill" cx="100" cy="100" r="22" fill="#1f2d5c" filter="url(#knob-shadow)"/>
+    <circle cx="100" cy="100" r="14" fill="none" stroke="#fdfdfc" stroke-opacity="0.3" stroke-width="1.5"/>
+  </g>
+</svg>
 </body>
 </html>
