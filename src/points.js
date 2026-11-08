@@ -30,15 +30,15 @@ export class Points {
     this.flash = flash;
     this.list = [];
     this.saving = false;
-    this.#makeSprites();
+    this.makeSprites();
     game.hooks.push((dt) => this.#update(dt));
     game.overlays = [(ctx, cam, l, t, r, b) => { this.#drawErasing(ctx, l, t, r, b); this.#drawStamps(ctx, cam, l, t, r, b); }];
     game.minimapPoints = () => this.list.map((p) => ({ x: p.x, y: p.y, warning: p.kind === "clear" }));
     game.pointShape = () => this.#pointShape();
   }
 
-  // スタンプの画像は、devicePixelRatio が変わったら作り直す
-  #makeSprites() {
+  // スタンプの画像は、devicePixelRatio が変わったとき・キャンバスの中身が失われたときに作り直す
+  makeSprites() {
     this.spriteDpr = devicePixelRatio || 1;
     this.sprites = makeStampSprites(this.spriteDpr);
   }
@@ -78,8 +78,9 @@ export class Points {
     const prev = g.prevP ?? g.p, side = g.side, r = STAMP_SIZE / 2;
     for (const pt of this.list) {
       // 前のフレームの位置から今の位置までの線分で判定する（間隔が長いフレームでも飛び越さないように）
-      const ax = wrapDiff(prev[0], pt.x, side), ay = wrapDiff(prev[1], pt.y, side);
+      // 前の位置は「今の位置 − 動いた量」で求める（別々に端で折り返すと、反対側で線分が裏返る）
       const bx = wrapDiff(g.p[0], pt.x, side), by = wrapDiff(g.p[1], pt.y, side);
+      const ax = bx - wrapDiff(g.p[0], prev[0], side), ay = by - wrapDiff(g.p[1], prev[1], side);
       const inside = Math.hypot(bx, by) <= r;
       // 触れている間に何度も効かないよう、一度離れるまでは反応しない
       if (!pt.inside && (inside || segmentDistance(ax, ay, bx, by) <= r)) this.#apply(pt);
@@ -102,7 +103,9 @@ export class Points {
   // 全消去: 消した線は 0.5 秒だけ「消えていく線」として残す
   #clear() {
     const g = this.game, t = g.trail;
-    this.erasing = t.count > MANY ? { at: g.time, image: this.#captureTiles() } : { at: g.time, ...snapshot(t) };
+    // 写し取りの画像を作れなかったら（メモリ不足など）、点線の演出にする
+    const image = t.count > MANY ? this.#captureTiles() : null;
+    this.erasing = image ? { at: g.time, image } : { at: g.time, ...snapshot(t) };
     const minimapCopy = document.createElement("canvas");
     minimapCopy.width = g.minimap.base.width; minimapCopy.height = g.minimap.base.height;
     minimapCopy.getContext("2d").drawImage(g.minimap.base, 0, 0);
@@ -121,6 +124,7 @@ export class Points {
     const canvas = document.createElement("canvas");
     canvas.width = Math.ceil(w * scale); canvas.height = Math.ceil(h * scale);
     const c = canvas.getContext("2d");
+    if (!c) { canvas.width = canvas.height = 0; return null; }
     c.setTransform(scale, 0, 0, scale, -left * scale, -top * scale);
     g.tiles.draw(c, left, top, left + w, top + h, g.frame);
     return { canvas, cx: cam.x, cy: cam.y, w, h };
@@ -144,7 +148,7 @@ export class Points {
       const x = cam.x + wrapDiff(pt.x, cam.x, side), y = cam.y + wrapDiff(pt.y, cam.y, side);
       if (x < left - r * 2 || x > right + r * 2 || y < top - r * 2 || y > bottom + r * 2) continue;
       const press = this.#press(pt), shake = this.#shake(pt);
-      if ((devicePixelRatio || 1) !== this.spriteDpr) this.#makeSprites();
+      if ((devicePixelRatio || 1) !== this.spriteDpr) this.makeSprites();
       const sprite = this.sprites[pt.kind === "color" ? `color:${pt.ink}` : pt.kind];
       ctx.save();
       ctx.translate(x + shake, y); ctx.rotate(pt.rot);
@@ -181,7 +185,8 @@ export class Points {
     const m = g.minimap.bg;
     g.minimap.redraw();
     m.setTransform(1, 0, 0, 1, 0, 0);
-    m.globalAlpha = 1 - k; m.drawImage(e.minimap, 0, 0); m.globalAlpha = 1;
+    // 消している間にミニマップの大きさが変わっても合うように、今の大きさに合わせて貼る
+    m.globalAlpha = 1 - k; m.drawImage(e.minimap, 0, 0, g.minimap.px, g.minimap.px); m.globalAlpha = 1;
   }
 
   #drawErasingImage(ctx, im, left, top, right, bottom) {

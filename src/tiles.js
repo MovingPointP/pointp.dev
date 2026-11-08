@@ -63,8 +63,10 @@ export class Tiles {
     missing.sort((a, b) => a.d - b.d);
     const until = performance.now() + BUILD_BUDGET_MS;
     for (const m of missing) {
-      if (performance.now() < until) {
-        const tile = this.#build(m.tx, m.ty);
+      // 画面の両端に同じ区画が映るときは、先に作った方を使う
+      const built = this.cache.get(m.tx * n + m.ty);
+      if (built || performance.now() < until) {
+        const tile = built || this.#build(m.tx, m.ty);
         tile.seen = frame;
         ctx.drawImage(tile.canvas, m.ix * s, m.iy * s, s, s);
       } else {
@@ -128,7 +130,7 @@ export class Tiles {
     const pts = this.trail.points, side = this.side;
     const cx = (tx + 0.5) * this.size, cy = (ty + 0.5) * this.size;
     g.lineCap = "round"; g.lineJoin = "round";
-    let style = null, open = false, lastI = -2;
+    let style = null, open = false, lastI = -2, lastSx = 0, lastSy = 0;
     const flush = () => { if (open) { g.stroke(); open = false; } };
     for (let r = 0; r < ranges.length; r += 2) {
       for (let i = ranges[r]; i <= ranges[r + 1]; i++) {
@@ -140,9 +142,10 @@ export class Tiles {
         const sx = Math.round((cx - (x0 + x1) / 2) / side) * side + ox;
         const sy = Math.round((cy - (y0 + y1) / 2) / side) * side + oy;
         if (!open) { g.beginPath(); open = true; }
-        if (lastI !== i - 1) g.moveTo(x0 + sx, y0 + sy);
+        // 前の線分と写しが違うときは、つなげずに描き始める
+        if (lastI !== i - 1 || sx !== lastSx || sy !== lastSy) g.moveTo(x0 + sx, y0 + sy);
         g.lineTo(x1 + sx, y1 + sy);
-        lastI = i;
+        lastI = i; lastSx = sx; lastSy = sy;
       }
       flush(); lastI = -2;
     }

@@ -2,6 +2,7 @@
 // - 線の画像（base）と、点P・見えている範囲・ポイント（overlay）を、キャンバスを分けて重ねる
 // - 線の画像には新しい分だけ描き足し、上の層だけを毎フレーム描き直す
 import { COLOR, P_HALO } from "./tokens.js";
+import { forEachCopy } from "./world.js";
 
 const REDRAW_BUDGET_MS = 4;
 const REDRAW_CHUNK = 20_000; // 時間を確かめる間隔（線分の数）
@@ -83,8 +84,8 @@ export class Minimap {
         g.stroke(); g.beginPath();
         style = st; g.strokeStyle = st.color; g.lineWidth = Math.max(this.minWidth, st.width);
       }
-      g.moveTo(pts[i * 2 - 2], pts[i * 2 - 1]);
-      g.lineTo(pts[i * 2], pts[i * 2 + 1]);
+      const x0 = pts[i * 2 - 2], y0 = pts[i * 2 - 1], x1 = pts[i * 2], y1 = pts[i * 2 + 1];
+      forEachCopy(x0, y0, x1, y1, g.lineWidth / 2, this.side, (sx, sy) => { g.moveTo(x0 + sx, y0 + sy); g.lineTo(x1 + sx, y1 + sy); });
     }
     g.stroke();
   }
@@ -115,6 +116,8 @@ export class Minimap {
     const g = this.bg;
     g.setTransform(this.k, 0, 0, this.k, 0, 0);
     g.lineCap = "round"; g.strokeStyle = color; g.lineWidth = Math.max(this.minWidth, width);
-    g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1); g.stroke();
+    g.beginPath();
+    forEachCopy(x0, y0, x1, y1, g.lineWidth / 2, this.side, (sx, sy) => { g.moveTo(x0 + sx, y0 + sy); g.lineTo(x1 + sx, y1 + sy); });
+    g.stroke();
   }
 }
