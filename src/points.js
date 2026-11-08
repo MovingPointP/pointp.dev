@@ -2,6 +2,7 @@
 import { savePNG } from "./save.js";
 import { STAMP_SIZE, drawWarning, makeStampSprites } from "./stamps.js";
 import { INKS, LINE_WIDTHS, SPEED_STEPS } from "./tokens.js";
+import { styleAt } from "./trail.js";
 import { wrapDiff } from "./world.js";
 
 const KINDS = [
@@ -18,6 +19,8 @@ const CLEAR_FROM_INTRO = 0.25; // 全消去は自己紹介から離す
 const PRESS_DOWN = 0.09, PRESS_UP = 0.27; // スタンプが沈む
 const SHAPE_IN = 0.08, SHAPE_OUT = 0.32; // 加速・減速で点P が伸び縮みする
 const ERASE = 0.5; // 全消去で線が消える
+const MANY = 30_000; // 点がこれより多いときは、点線をやめて古い区画の画像を薄くするだけにする
+const ERASE_MARGIN = 256; // その画像に入れる、画面の外の幅（消えていく間にカメラが動く分）
 const SHAKE = 0.4; // 保存できなかったとき、スタンプが横に揺れる
 
 export class Points {
@@ -27,11 +30,17 @@ export class Points {
     this.flash = flash;
     this.list = [];
     this.saving = false;
-    this.sprites = makeStampSprites(devicePixelRatio || 1);
+    this.#makeSprites();
     game.hooks.push((dt) => this.#update(dt));
     game.overlays = [(ctx, cam, l, t, r, b) => { this.#drawErasing(ctx, l, t, r, b); this.#drawStamps(ctx, cam, l, t, r, b); }];
     game.minimapPoints = () => this.list.map((p) => ({ x: p.x, y: p.y, warning: p.kind === "clear" }));
     game.pointShape = () => this.#pointShape();
+  }
+
+  // スタンプの画像は、devicePixelRatio が変わったら作り直す
+  #makeSprites() {
+    this.spriteDpr = devicePixelRatio || 1;
+    this.sprites = makeStampSprites(this.spriteDpr);
   }
 
   // 置く（開くたびにランダム）。条件を満たせないときは、離す距離を少しずつゆるめて必ず 15 個置く
@@ -93,7 +102,7 @@ export class Points {
   // 全消去: 消した線は 0.5 秒だけ「消えていく線」として残す
   #clear() {
     const g = this.game, t = g.trail;
-    this.erasing = { at: g.time, ...snapshot(t) };
+    this.erasing = t.count > MANY ? { at: g.time, image: this.#captureTiles() } : { at: g.time, ...snapshot(t) };
     const minimapCopy = document.createElement("canvas");
     minimapCopy.width = g.minimap.base.width; minimapCopy.height = g.minimap.base.height;
     minimapCopy.getContext("2d").drawImage(g.minimap.base, 0, 0);
@@ -102,6 +111,19 @@ export class Points {
     t.start(g.p[0], g.p[1], g.ink, g.lineWidth);
     g.tiles.clear();
     g.minimap.redraw();
+  }
+
+  // 画面のまわりの線を、今の区画から 1 枚の画像に写す
+  #captureTiles() {
+    const g = this.game, cam = g.camera(), scale = Math.min(2, devicePixelRatio || 1) * cam.z;
+    const w = innerWidth / cam.z + ERASE_MARGIN * 2, h = innerHeight / cam.z + ERASE_MARGIN * 2;
+    const left = cam.x - w / 2, top = cam.y - h / 2;
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.ceil(w * scale); canvas.height = Math.ceil(h * scale);
+    const c = canvas.getContext("2d");
+    c.setTransform(scale, 0, 0, scale, -left * scale, -top * scale);
+    g.tiles.draw(c, left, top, left + w, top + h, g.frame);
+    return { canvas, cx: cam.x, cy: cam.y, w, h };
   }
 
   async #save(pt) {
@@ -122,6 +144,7 @@ export class Points {
       const x = cam.x + wrapDiff(pt.x, cam.x, side), y = cam.y + wrapDiff(pt.y, cam.y, side);
       if (x < left - r * 2 || x > right + r * 2 || y < top - r * 2 || y > bottom + r * 2) continue;
       const press = this.#press(pt), shake = this.#shake(pt);
+      if ((devicePixelRatio || 1) !== this.spriteDpr) this.#makeSprites();
       const sprite = this.sprites[pt.kind === "color" ? `color:${pt.ink}` : pt.kind];
       ctx.save();
       ctx.translate(x + shake, y); ctx.rotate(pt.rot);
@@ -142,13 +165,36 @@ export class Points {
     const e = this.erasing, g = this.game;
     if (!e) return;
     const t = (g.time - e.at) / ERASE;
-    if (t >= 1) { this.erasing = null; return; }
+    if (t >= 1) {
+      // 写した画像のメモリを返す
+      for (const c of [e.image?.canvas, e.minimap]) if (c) c.width = c.height = 0;
+      this.erasing = null;
+      return;
+    }
     const k = 1 - Math.pow(1 - t, 3);
     ctx.save();
     ctx.globalAlpha = 1 - k;
+    if (e.image) this.#drawErasingImage(ctx, e.image, left, top, right, bottom);
+    else this.#drawErasingLines(ctx, e, k, left, top, right, bottom);
+    ctx.restore();
+    // ミニマップも、古い線の画像を薄くしていく
+    const m = g.minimap.bg;
+    g.minimap.redraw();
+    m.setTransform(1, 0, 0, 1, 0, 0);
+    m.globalAlpha = 1 - k; m.drawImage(e.minimap, 0, 0); m.globalAlpha = 1;
+  }
+
+  #drawErasingImage(ctx, im, left, top, right, bottom) {
+    const side = this.game.side, cx = (left + right) / 2, cy = (top + bottom) / 2;
+    // 端をまたいでカメラが反対側へ移っても、同じ場所に貼る
+    const x = cx + wrapDiff(im.cx, cx, side) - im.w / 2, y = cy + wrapDiff(im.cy, cy, side) - im.h / 2;
+    ctx.drawImage(im.canvas, x, y, im.w, im.h);
+  }
+
+  #drawErasingLines(ctx, e, k, left, top, right, bottom) {
+    const g = this.game;
     ctx.lineCap = "round"; ctx.lineJoin = "round";
     const side = g.side, cx = (left + right) / 2, cy = (top + bottom) / 2;
-    const many = e.count > 30_000; // 点が多いときは点線をやめ、薄くするだけ
     let style = null;
     for (let i = 1; i < e.count; i++) {
       if (e.flags[i] & 1) continue;
@@ -159,16 +205,10 @@ export class Points {
       if (st !== style) {
         style = st;
         ctx.strokeStyle = st.color; ctx.lineWidth = st.width * (1 - 0.4 * k);
-        if (!g.reduceMotion && !many) { ctx.setLineDash([Math.max(1, 26 * (1 - k)), 2 + 30 * k]); ctx.lineDashOffset = (i * 37) % 50; }
+        if (!g.reduceMotion) { ctx.setLineDash([Math.max(1, 26 * (1 - k)), 2 + 30 * k]); ctx.lineDashOffset = (i * 37) % 50; }
       }
       ctx.beginPath(); ctx.moveTo(x0 + sx, y0 + sy); ctx.lineTo(x1 + sx, y1 + sy); ctx.stroke();
     }
-    ctx.restore();
-    // ミニマップも、古い線の画像を薄くしていく
-    const m = g.minimap.bg;
-    g.minimap.redraw();
-    m.setTransform(1, 0, 0, 1, 0, 0);
-    m.globalAlpha = 1 - k; m.drawImage(e.minimap, 0, 0); m.globalAlpha = 1;
   }
 
   #press(pt) {
@@ -208,10 +248,6 @@ function segmentDistance(ax, ay, bx, by) {
 // 今の線を写しておく（全消去の演出と保存のため）
 function snapshot(t) {
   const runs = t.runs.slice();
-  const styleOf = (i) => {
-    let lo = 0, hi = runs.length - 1;
-    while (lo < hi) { const mid = (lo + hi + 1) >> 1; if (runs[mid].start <= i) lo = mid; else hi = mid - 1; }
-    return runs[lo];
-  };
+  const styleOf = (i) => styleAt(runs, i);
   return { points: t.points.slice(0, t.count * 2), flags: t.flags.slice(0, t.count), count: t.count, styleOf };
 }

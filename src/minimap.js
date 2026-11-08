@@ -3,6 +3,9 @@
 // - 線の画像には新しい分だけ描き足し、上の層だけを毎フレーム描き直す
 import { COLOR, P_HALO } from "./tokens.js";
 
+const REDRAW_BUDGET_MS = 4;
+const REDRAW_CHUNK = 20_000; // 時間を確かめる間隔（線分の数）
+
 export class Minimap {
   constructor(root, trail) {
     this.root = root;
@@ -28,14 +31,52 @@ export class Minimap {
 
   redraw() {
     if (!this.px) return;
-    const g = this.bg, t = this.trail, pts = t.points;
+    this.pending = null;
+    this.#begin(this.bg);
+    this.#drawRange(this.bg, 1, this.trail.count);
+  }
+
+  // 点が多いとき用: 裏のキャンバスに数フレームかけて描き、描き終えたら差し替える（その間は今の画像のまま）
+  redrawGradually() {
+    if (!this.px) return;
+    const canvas = document.createElement("canvas");
+    canvas.width = canvas.height = this.px;
+    const g = canvas.getContext("2d");
+    this.#begin(g);
+    this.pending = { canvas, g, next: 1 };
+  }
+
+  // 毎フレーム呼ぶ。1 フレームに描くのは約 4ms まで
+  continueRedraw() {
+    const p = this.pending;
+    if (!p) return;
+    const until = performance.now() + REDRAW_BUDGET_MS;
+    while (p.next < this.trail.count && performance.now() < until) {
+      const end = Math.min(this.trail.count, p.next + REDRAW_CHUNK);
+      this.#drawRange(p.g, p.next, end);
+      p.next = end;
+    }
+    if (p.next < this.trail.count) return;
+    this.bg.setTransform(1, 0, 0, 1, 0, 0);
+    this.bg.clearRect(0, 0, this.px, this.px);
+    this.bg.drawImage(p.canvas, 0, 0);
+    p.canvas.width = p.canvas.height = 0;
+    this.pending = null;
+  }
+
+  #begin(g) {
     g.setTransform(1, 0, 0, 1, 0, 0);
     g.clearRect(0, 0, this.px, this.px);
     g.setTransform(this.k, 0, 0, this.k, 0, 0);
     g.lineCap = "round"; g.lineJoin = "round";
+  }
+
+  // 線分 from〜end−1 を描く
+  #drawRange(g, from, end) {
+    const t = this.trail, pts = t.points;
     let style = null;
     g.beginPath();
-    for (let i = 1; i < t.count; i++) {
+    for (let i = from; i < end; i++) {
       if (t.isBreak(i)) continue;
       const st = t.styleOf(i);
       if (st !== style) {

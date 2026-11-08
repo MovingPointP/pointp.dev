@@ -51,7 +51,6 @@ export class Game {
     this.written = 0; // 書いた点の番号
     this.phase = "intro";
     this.introSpeed = this.intro.total / INTRO_SECONDS;
-    if (reduceMotion) this.#finishIntro(true);
   }
 
   get lineWidth() { return LINE_WIDTHS[this.widthIndex]; }
@@ -82,11 +81,14 @@ export class Game {
   step(dt) {
     this.time += dt;
     this.frame++;
-    if (this.phase === "intro") this.#writeIntro();
+    // 動きを減らす設定では、最初の 1 歩で書き終える（main.js が onPlay を入れ終わってから）
+    if (this.phase === "intro") { if (this.reduceMotion) this.#finishIntro(true); else this.#writeIntro(); }
     else if (this.phase !== "rest") this.#move(dt);
     for (const hook of this.hooks) hook(dt);
     // ノブは指を離すと中心へ戻る（時間で計算する）。手がかりを見せている間は、その位置にする
-    if (!this.joystick.touching) {
+    if (this.joystick.touching) {
+      this.knob[0] = this.joystick.state.x; this.knob[1] = this.joystick.state.y; // 離したとき、ここから戻す
+    } else {
       if (this.knobOverride) {
         this.knob[0] = this.knobOverride[0]; this.knob[1] = this.knobOverride[1];
       } else {
@@ -96,7 +98,8 @@ export class Game {
       }
       this.joystick.setKnob(this.knob[0], this.knob[1]);
     }
-    if (this.trail.compactIfNeeded()) { this.tiles.clear(); this.minimap.redraw(); }
+    if (this.trail.compactIfNeeded()) { this.tiles.clear(); this.minimap.redrawGradually(); }
+    this.minimap.continueRedraw();
   }
 
   // 自己紹介: 書いた長さ = 速さ × 時間
@@ -129,6 +132,11 @@ export class Game {
     this.phaseStart = this.time;
     if (!this.playable) { this.phase = "rest"; return; }
     this.phase = skip ? "free" : "zoom";
+    // カメラが寄り終わったときに使う区画を、寄っている間の空いた時間に作っておく
+    if (!skip) (window.requestIdleCallback ?? setTimeout)(() => {
+      const z = this.#baseZoom();
+      this.tiles.prepare(this.p[0], this.p[1], Math.hypot(innerWidth, innerHeight) / 2 / z + this.tiles.size);
+    });
     this.speed = skip ? this.targetSpeed : this.introSpeed;
     document.body.classList.add("playing");
     this.onPlay?.();

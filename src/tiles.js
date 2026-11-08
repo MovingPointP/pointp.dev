@@ -28,6 +28,9 @@ export class Tiles {
     if (scale === this.scale) return;
     this.scale = scale;
     this.px = Math.round(this.size * scale);
+    // 使い回し用のキャンバスは古い解像度のままなので捨てる
+    for (const tile of this.pool) tile.canvas.width = tile.canvas.height = 0;
+    this.pool = [];
     this.clear();
   }
 

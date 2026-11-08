@@ -8,6 +8,16 @@ const BREAK = 1;
 const MAX_POINTS = 2_000_000; // 上限（16MB）。超えたら古い線から消す
 const MIN_STEP = 2; // 向きが変わっても、前の点から 2px 未満なら点を足さない
 
+// 線分 i の見た目（runs のうち start ≤ i の最後のもの）
+export function styleAt(runs, i) {
+  let lo = 0, hi = runs.length - 1;
+  while (lo < hi) {
+    const mid = (lo + hi + 1) >> 1;
+    if (runs[mid].start <= i) lo = mid; else hi = mid - 1;
+  }
+  return runs[lo];
+}
+
 export class Trail {
   constructor(side, tileSize) {
     this.side = side;
@@ -71,21 +81,15 @@ export class Trail {
   get headPrevX() { return this.points[(this.count - 2) * 2]; }
   get headPrevY() { return this.points[(this.count - 2) * 2 + 1]; }
 
-  styleOf(i) {
-    let lo = 0, hi = this.runs.length - 1;
-    while (lo < hi) {
-      const mid = (lo + hi + 1) >> 1;
-      if (this.runs[mid].start <= i) lo = mid; else hi = mid - 1;
-    }
-    return this.runs[lo];
-  }
+  styleOf(i) { return styleAt(this.runs, i); }
 
   isBreak(i) { return (this.flags[i] & BREAK) !== 0; }
 
   // 区画（tx, ty）を通る線分の番号の範囲
   rangesOf(tx, ty) { return this.index.get(tx * this.tiles + ty); }
 
-  // 点が上限を超えたら、古い 4 分の 1 を消して目次を作り直す。true を返したら区画を作り直す
+  // 点が上限を超えたら、古い 4 分の 1 を消す。true を返したら区画を作り直す
+  // 目次は線分ごとに作り直さず、番号の範囲をずらすだけにする（1 フレームで終わるように）
   compactIfNeeded() {
     if (this.count < MAX_POINTS) return false;
     const drop = this.count >> 2;
@@ -95,8 +99,14 @@ export class Trail {
     this.flags[0] |= BREAK;
     this.runs = this.runs.map((r) => ({ ...r, start: Math.max(0, r.start - drop) }))
       .filter((r, k, all) => k === all.length - 1 || all[k + 1].start > r.start);
-    this.index.clear();
-    for (let i = 1; i < this.count; i++) if (!this.isBreak(i)) this.#indexSegment(i);
+    for (const [key, ranges] of this.index) {
+      const kept = [];
+      for (let r = 0; r < ranges.length; r += 2) {
+        const end = ranges[r + 1] - drop;
+        if (end >= 1) kept.push(Math.max(1, ranges[r] - drop), end);
+      }
+      if (kept.length) this.index.set(key, kept); else this.index.delete(key);
+    }
     return true;
   }
 
