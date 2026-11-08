@@ -4,6 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>pointp.dev デザインモック</title>
+<!-- 「P」の文字は STIX Two Text の斜体 -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=STIX+Two+Text:ital,wght@1,600&display=swap" rel="stylesheet">
 <style>
   :root {
     /* primitive: Radix Colors (light) */
@@ -51,13 +55,13 @@
   .screen svg.lines { position: absolute; inset: 0; width: 100%; height: 100%; --sw-mid: 12px; --sw-bold: 24px; }
   .edge { position: absolute; top: 0; bottom: 0; left: calc(var(--grid-size) * 35); border-left: 2px solid var(--color-world-edge); }
   .p { position: absolute; left: 50%; top: 50%; width: 32px; height: 32px; margin: -16px; border-radius: var(--radius-full); background: var(--color-current-ink); box-shadow: 0 0 0 3px var(--color-paper); }
-  .p-label { position: absolute; left: calc(50% + 19px); top: calc(50% - 39px); font: italic 600 20px/1 Georgia, serif; color: var(--color-current-ink); -webkit-text-stroke: 6px var(--color-paper); paint-order: stroke fill; }
+  .p-label { position: absolute; left: calc(50% + 19px); top: calc(50% - 42px); font: italic 600 23px/1 "STIX Two Text", Georgia, serif; color: var(--color-current-ink); -webkit-text-stroke: 6px var(--color-paper); paint-order: stroke fill; }
   /* 縁取り 3px: text-stroke は輪郭の両側に描かれるので 6px を指定し、paint-order で文字の下に回す */
   .pt { position: absolute; width: 56px; height: 56px; margin: -28px; border-radius: var(--radius-full); background: var(--color-paper); border: 1.5px solid var(--color-text-muted); display: grid; place-items: center; color: var(--color-text-muted); }
   .pt::after { content: ""; position: absolute; inset: 4px; border-radius: var(--radius-full); border: .75px dashed var(--color-text-muted); }
   .pt svg { width: 31px; height: 31px; }
   .pt svg.warn { position: absolute; right: -10px; top: -10px; width: 25px; height: 25px; }
-  .minimap { position: absolute; top: var(--space-4); right: var(--space-4); width: 240px; aspect-ratio: 1; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-2); box-shadow: var(--shadow-1); overflow: hidden; }
+  .minimap { position: absolute; top: var(--space-4); right: var(--space-4); width: 200px; aspect-ratio: 1; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-2); box-shadow: var(--shadow-1); overflow: hidden; }
   .minimap svg { width: 100%; height: 100%; display: block; }
   /* 台の直径 128px（viewBox 200 の中の r=64）、ノブ 44px。台の下端は画面の下から 24px */
   .joystick { position: absolute; left: 50%; bottom: -12px; transform: translateX(-50%); width: 200px; height: 200px; overflow: visible; }
@@ -95,10 +99,10 @@
     <g id="warn"><path d="M0 -8.5L8 5.5H-8z" fill="var(--color-warning)" stroke="var(--sand-12)" stroke-width="1.25" stroke-linejoin="round"/><path d="M0 -3v3.5" stroke="var(--sand-12)" stroke-width="1.5" stroke-linecap="round"/><circle cy="3" r=".9" fill="var(--sand-12)"/></g>
 
     <!-- アイコンは中心 (0,0)・24px 四方・線 2px・端は丸 -->
-    <g id="i-thicker" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M-9 0h18" stroke-width="3.5"/><path d="M0 -4v-5M-2.5 -6.5L0 -9l2.5 2.5M0 4v5M-2.5 6.5L0 9l2.5 -2.5" stroke-width="1.5"/></g>
-    <g id="i-thinner" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M-9 0h18" stroke-width="1.5"/><path d="M0 -9.5v5M-2.5 -7L0 -4.5l2.5 -2.5M0 9.5v-5M-2.5 7L0 4.5l2.5 2.5" stroke-width="1.5"/></g>
-    <g id="i-faster" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M-8 5a9 9 0 0 1 16 0"/><path d="M0 4l5 -6"/><circle cy="4" r="1.5" fill="currentColor"/></g>
-    <g id="i-slower" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M-8 5a9 9 0 0 1 16 0"/><path d="M0 4l-5 -6"/><circle cy="4" r="1.5" fill="currentColor"/></g>
+    <g id="i-thicker" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M-9.5 0h19" stroke-width="4.5"/><path d="M0 -4.5v-5.5M-3.2 -6.8L0 -10l3.2 3.2M0 4.5v5.5M-3.2 6.8L0 10l3.2 -3.2" stroke-width="2"/></g>
+    <g id="i-thinner" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M-9.5 0h19" stroke-width="1.8"/><path d="M0 -10.5v6M-3.2 -7.7L0 -4.5l3.2 -3.2M0 10.5v-6M-3.2 7.7L0 4.5l3.2 3.2" stroke-width="2"/></g>
+    <g id="i-faster" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M-8 5A9 9 0 0 1 0 -8.12" stroke-width="1.5"/><path d="M0 -8.12A9 9 0 0 1 8 5" stroke-width="3.5"/><path d="M0 4L5.5 -2.5" stroke-width="2.2"/><circle cy="4" r="1.8" fill="currentColor" stroke="none"/></g>
+    <g id="i-slower" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M-8 5A9 9 0 0 1 0 -8.12" stroke-width="3.5"/><path d="M0 -8.12A9 9 0 0 1 8 5" stroke-width="1.5"/><path d="M0 4L-5.5 -2.5" stroke-width="2.2"/><circle cy="4" r="1.8" fill="currentColor" stroke="none"/></g>
     <g id="i-clear" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M-7 -5h14M-2 -5v-2h4v2M-5.5 -5l1 12h9l1 -12"/><path d="M-1.5 -1v5M1.5 -1v5" stroke-width="1.5"/></g>
     <g id="i-save" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M0 -7v10M-4.5 -1.5L0 3l4.5 -4.5M-7 7h14"/></g>
   </defs>
@@ -138,8 +142,8 @@
     <!-- ミニマップ: 世界は 2880 四方。画面の左上は世界の (2040, 1200)。画面の x=840 が世界の右端（= 左端）-->
     <div class="minimap" title="ミニマップ">
       <svg viewBox="0 0 2880 2880">
-        <!-- 線は最小 1px（世界の 12 = ミニマップの 1px） -->
-        <g style="--sw-mid: 12px; --sw-bold: 24px">
+        <!-- 線は最小 1px（世界の 14.4 = ミニマップの 1px） -->
+        <g style="--sw-mid: 14.4px; --sw-bold: 24px">
           <use href="#trail" transform="translate(2040 1200)"/>
           <use href="#trail" transform="translate(-840 1200)"/>
         </g>
