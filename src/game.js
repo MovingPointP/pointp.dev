@@ -63,6 +63,8 @@ export class Game {
     this.last = null;
     const tick = (now) => {
       this.raf = requestAnimationFrame(tick);
+      // 書き始めの瞬間に目印を打つ（Canvas は LCP の対象にならないので、これで書き始めまでの時間を測る）
+      if (this.frame === 0) performance.mark("intro-start");
       if (this.last === null) this.last = now;
       const dt = Math.min(MAX_DT, (now - this.last) / 1000);
       this.last = now;
