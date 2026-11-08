@@ -91,7 +91,7 @@
   - o・v・w のあとは上（てっぺんの高さ）でつなぎ、次の文字の下からの入りの線は省く（つなぎ目に折り返しができないように）
   - 下で払って終わる文字のあとは、次の文字の入りの線の書き始めの点を省き、払いからそのまま入りの線へ流す（右上がりの線どうしを短い横線でつなぐとジグザグに折れるため）
   - A は筆記体の雰囲気を残しつつ簡単にし、横棒は右上がりに傾け、l との間をあける。I と A は活字の形にはしない（ほかの筆記体の文字と合わないため）
-- パスは [tools/intro/build.mjs](../tools/intro/build.mjs) で生成する（`node tools/intro/build.mjs` → `tools/intro/intro.svg`）。使う文字だけのフォントデータは [tools/intro/cursive.json](../tools/intro/cursive.json)、差し替える文字は [tools/intro/readable.json](../tools/intro/readable.json)（差し替える理由も書いてある）
+- パスは [tools/intro/build.mjs](../tools/intro/build.mjs) で生成する（`npm run intro`。点P が書くための曲線のデータ `src/intro-data.js`、`noscript` 用の `src/public/intro.svg`、確認用の `tools/intro/intro.svg` を書き出す）。使う文字だけのフォントデータは [tools/intro/cursive.json](../tools/intro/cursive.json)、差し替える文字は [tools/intro/readable.json](../tools/intro/readable.json)（差し替える理由も書いてある）
 
 ## ポイント
 

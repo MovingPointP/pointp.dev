@@ -103,4 +103,20 @@ for (let i = 1; i < list.length; i++) d += connector(list[i - 1], list[i]) + smo
 const nums = [...d.matchAll(/(-?\d*\.?\d+),(-?\d*\.?\d+)/g)].map((m) => [+m[1], +m[2]]);
 const [x0, x1] = [Math.min(...nums.map((p) => p[0])) - 2, Math.max(...nums.map((p) => p[0])) + 2];
 const [y0, y1] = [Math.min(...nums.map((p) => p[1])) - 2, Math.max(...nums.map((p) => p[1])) + 2];
-writeFileSync(new URL("./intro.svg", import.meta.url), `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${f(x0)} ${f(y0)} ${f(x1 - x0)} ${f(y1 - y0)}"><path d="${d}" fill="none" stroke="#1f2d5c" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/></svg>\n`);
+const viewBox = `${f(x0)} ${f(y0)} ${f(x1 - x0)} ${f(y1 - y0)}`;
+
+// 確認用の SVG（線の太さ 1）
+writeFileSync(new URL("./intro.svg", import.meta.url), `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${viewBox}"><path d="${d}" fill="none" stroke="#1f2d5c" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/></svg>\n`);
+
+// noscript 用の SVG。線の太さは本画面と比が合うように（小文字の高さ 9 に対して、線 12px ÷ 倍率 4.67 ≒ 2.6）
+writeFileSync(new URL("../../src/public/intro.svg", import.meta.url), `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${viewBox}"><path d="${d}" fill="none" stroke="#1f2d5c" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>\n`);
+
+// 点P が書くための曲線のデータ。[始点 x, y, 制御点1 x, y, 制御点2 x, y, 終点 x, y, …] を小数 1 桁で（誤差は描く大きさで 0.25px 未満）
+const r1 = (n) => +n.toFixed(1);
+const flat = nums.flat().map(r1);
+writeFileSync(new URL("../../src/intro-data.js", import.meta.url), `// tools/intro/build.mjs が書き出す。手で編集しない
+// 自己紹介「I'm pointp / Always moving」の一筆書き。最初の 2 つが始点、そのあと 6 つずつが 3 次ベジェ曲線
+// X_HEIGHT は小文字の高さ（この座標での値）。大きさを決めるのに使う
+export const X_HEIGHT = 9;
+export const INTRO = [${flat.join(",")}];
+`);
