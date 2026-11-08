@@ -12,7 +12,7 @@ import { worldSide, wrap, wrapDiff } from "./world.js";
 
 const MAX_DT = 0.1; // 1 フレームで進める時間の上限（秒）
 const KNOB_RETURN = 0.05; // 指を離したノブが中心へ戻る速さ（時定数、秒）
-const FONT = '"STIX Two Text", Georgia, serif';
+const FONT = '"pointp P", Georgia, serif'; // 読み込めないときは Georgia
 
 const easeOut = (t) => 1 - Math.pow(1 - t, 3);
 const easeInOut = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);

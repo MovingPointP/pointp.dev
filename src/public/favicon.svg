@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+<rect width="64" height="64" rx="12" fill="#fdfdfc"/>
+<path d="M0 16H64M0 32H64M0 48H64M16 0V64M32 0V64M48 0V64" stroke="#d1f0fa" stroke-width="1"/>
+<circle cx="24" cy="40" r="13" fill="#fdfdfc"/>
+<circle cx="24" cy="40" r="10" fill="#1f2d5c"/>
+<text x="36" y="30" font-family="Georgia, serif" font-style="italic" font-weight="600" font-size="24" fill="#1f2d5c" stroke="#fdfdfc" stroke-width="4" paint-order="stroke" stroke-linejoin="round">P</text>
+</svg>

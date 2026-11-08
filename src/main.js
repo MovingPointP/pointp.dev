@@ -55,4 +55,6 @@ if (["localhost", "127.0.0.1"].includes(location.hostname) && params.has("t")) {
   game.render();
 } else {
   game.start();
+  // 「P」の文字の書体は、最初のフレームのあとに読み込む（書き終わるまで 5 秒あるので間に合う。読み込めなければ Georgia）
+  requestAnimationFrame(() => document.fonts.load('italic 600 20px "pointp P"', "P").catch(() => {}));
 }
