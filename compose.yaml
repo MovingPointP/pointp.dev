@@ -20,6 +20,12 @@ services:
       - ALL
     security_opt:
       - no-new-privileges:true
+    # アクセスログは残すが、ディスクがあふれないよう、IP を含むかもしれないログを長く残さないよう上限を付ける
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 networks:
   proxy:
