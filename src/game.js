@@ -75,6 +75,8 @@ export class Game {
       this.last = now;
       // 自己紹介だけを見せる画面は、書き終えたら絵が変わらないので描き直さない
       const still = this.phase === "rest";
+      // devicePixelRatio が変わった（ブラウザの拡大縮小、解像度の違うモニターへの移動）。通知に頼らず毎フレーム比べる
+      if ((devicePixelRatio || 1) !== this.dpr) this.resize();
       this.step(dt);
       if (!still) this.render();
     };
@@ -184,7 +186,7 @@ export class Game {
 
   // ---- 大きさ ----
   resize() {
-    const dpr = devicePixelRatio || 1;
+    const dpr = this.dpr = devicePixelRatio || 1;
     this.canvas.width = Math.round(innerWidth * dpr);
     this.canvas.height = Math.round(innerHeight * dpr);
     this.tiles.setScale(dpr);

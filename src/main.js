@@ -30,10 +30,6 @@ const setUpPlay = () => {
 if (game.playable) setUpPlay(); else game.onPlayable = setUpPlay;
 
 addEventListener("resize", () => game.resize());
-// devicePixelRatio が変わったとき（ブラウザの拡大縮小、解像度の違うモニターへの移動）は描き直す
-(function watchPixelRatio() {
-  matchMedia(`(resolution: ${devicePixelRatio}dppx)`).addEventListener("change", () => { game.resize(); watchPixelRatio(); }, { once: true });
-})();
 // キャンバスの中身が失われたら、区画・ミニマップ・スタンプの画像を作り直す
 // 裏から戻ったときは、知らせなしに消えていることがあるので、同じように作り直す
 const rebuild = () => { game.tiles.clear(); game.minimap.refresh(); game.points?.makeSprites(); game.render(); };
