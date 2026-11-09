@@ -34,6 +34,10 @@ export class Points {
     this.flash = flash;
     this.list = [];
     this.saving = false;
+    // 触っていないのにファイルが落ちないよう、保存はジョイスティックに触ってから 1 回だけ効く
+    this.saveArmed = false;
+    const onTouch = game.onTouch;
+    game.onTouch = () => { onTouch?.(); this.saveArmed = true; };
     this.makeSprites();
     game.hooks.push((dt) => this.#update(dt));
     game.overlays = [(ctx, cam, l, t, r, b) => { this.#drawErasing(ctx, l, t, r, b); this.#drawStamps(ctx, cam, l, t, r, b); }];
@@ -137,6 +141,8 @@ export class Points {
 
   async #save(pt) {
     if (this.saving) return; // 保存している間は、もう一度通っても無視する
+    if (!this.saveArmed && !this.game.joystick.touching) return;
+    this.saveArmed = false;
     this.saving = true;
     const ok = await savePNG(snapshot(this.game.trail), this.game.side);
     this.saving = false;
