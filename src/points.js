@@ -192,9 +192,10 @@ export class Points {
       g.minimap.redraw(); // 古い線の残像を残さない
       return;
     }
-    const k = 1 - Math.pow(1 - t, 3);
+    // かすれは早めに進め、薄くなるのは終わりに向けて速める（途中のかすれた線が見えるように）
+    const k = 1 - Math.pow(1 - t, 2), alpha = 1 - t * t;
     ctx.save();
-    ctx.globalAlpha = 1 - k;
+    ctx.globalAlpha = alpha;
     if (e.image) this.#drawErasingImage(ctx, e.image, left, top, right, bottom);
     else this.#drawErasingLines(ctx, e, k, left, top, right, bottom);
     ctx.restore();
@@ -203,7 +204,7 @@ export class Points {
     g.minimap.redraw();
     m.setTransform(1, 0, 0, 1, 0, 0);
     // 消している間にミニマップの大きさが変わっても合うように、今の大きさに合わせて貼る
-    m.globalAlpha = 1 - k; m.drawImage(e.minimap, 0, 0, g.minimap.px, g.minimap.px); m.globalAlpha = 1;
+    m.globalAlpha = alpha; m.drawImage(e.minimap, 0, 0, g.minimap.px, g.minimap.px); m.globalAlpha = 1;
   }
 
   #drawErasingImage(ctx, im, left, top, right, bottom) {
@@ -217,20 +218,32 @@ export class Points {
     const g = this.game;
     ctx.lineCap = "round"; ctx.lineJoin = "round";
     const side = g.side, cx = (left + right) / 2, cy = (top + bottom) / 2;
-    let style = null;
+    // つながった線は 1 本のパスで引く（線分ごとに引くと、点線の模様が毎回はじめに戻り、半透明の端も重なる）
+    let style = null, open = false, psx = 0, psy = 0;
+    const flush = () => { if (open) { ctx.stroke(); open = false; } };
     for (let i = 1; i < e.count; i++) {
-      if (e.flags[i] & 1) continue;
+      if (e.flags[i] & 1) { flush(); continue; }
       const x0 = e.points[i * 2 - 2], y0 = e.points[i * 2 - 1], x1 = e.points[i * 2], y1 = e.points[i * 2 + 1];
       const sx = cx + wrapDiff(x0, cx, side) - x0, sy = cy + wrapDiff(y0, cy, side) - y0;
-      if (Math.max(x0, x1) + sx < left - 24 || Math.min(x0, x1) + sx > right + 24 || Math.max(y0, y1) + sy < top - 24 || Math.min(y0, y1) + sy > bottom + 24) continue;
+      if (Math.max(x0, x1) + sx < left - 24 || Math.min(x0, x1) + sx > right + 24 || Math.max(y0, y1) + sy < top - 24 || Math.min(y0, y1) + sy > bottom + 24) { flush(); continue; }
       const st = e.styleOf(i);
       if (st !== style) {
+        flush();
         style = st;
-        ctx.strokeStyle = st.color; ctx.lineWidth = st.width * (1 - 0.4 * k);
-        if (!g.reduceMotion) { ctx.setLineDash([Math.max(1, 26 * (1 - k)), 2 + 30 * k]); ctx.lineDashOffset = (i * 37) % 50; }
+        const w = st.width * (1 - 0.4 * k);
+        ctx.strokeStyle = st.color; ctx.lineWidth = w;
+        // 丸い端がすき間を埋めるので、すき間は線の太さの分だけ広くとる
+        if (!g.reduceMotion) ctx.setLineDash([Math.max(0.5, 26 * (1 - k)), w + 30 * k]);
       }
-      ctx.beginPath(); ctx.moveTo(x0 + sx, y0 + sy); ctx.lineTo(x1 + sx, y1 + sy); ctx.stroke();
+      if (!open || sx !== psx || sy !== psy) {
+        flush();
+        ctx.beginPath(); ctx.moveTo(x0 + sx, y0 + sy);
+        if (!g.reduceMotion) ctx.lineDashOffset = (i * 37) % 50;
+        open = true; psx = sx; psy = sy;
+      }
+      ctx.lineTo(x1 + sx, y1 + sy);
     }
+    flush();
   }
 
   #press(pt) {
