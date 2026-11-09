@@ -4,6 +4,8 @@
 // - 画面に映る区画だけを持ち、新しい線は持っている区画に描き足す
 // - まだできていない区画は、座標データから直接描く（1 フレームに作るのは約 4ms まで）
 
+import { wrapDiff } from "./world.js";
+
 const TARGET = 256;
 const BUILD_BUDGET_MS = 4;
 
@@ -17,6 +19,7 @@ export class Tiles {
     this.n = trail.tiles;
     this.cache = new Map(); // キー → { canvas, g, seen }
     this.pool = [];
+    this.missing = [];
     this.maxScale = 2;
     this.setScale(devicePixelRatio || 1);
     // 新しい線は、持っている区画にだけ描き足す
@@ -44,14 +47,15 @@ export class Tiles {
 
   // 画面に映る区画を描く。left・top などは世界の座標（端をまたぐので 0〜side の外にもなる）
   // dx・dy は進む向き（その先の区画から先に作る）
-  draw(ctx, left, top, right, bottom, frame, dx = 0, dy = 0) {
+  // m は ctx に入っている変換（{ a, d, e, f }）
+  draw(ctx, m, left, top, right, bottom, frame, dx = 0, dy = 0) {
     const s = this.size, n = this.n;
     const ax = Math.floor(left / s), bx = Math.floor(right / s);
     const ay = Math.floor(top / s), by = Math.floor(bottom / s);
     const cx = (left + right) / 2 + dx * s, cy = (top + bottom) / 2 + dy * s;
-    const m = ctx.getTransform();
     ctx.setTransform(1, 0, 0, 1, 0, 0); // 区画はデバイス px で貼る
-    const missing = [];
+    const missing = this.missing;
+    missing.length = 0;
     for (let ix = ax; ix <= bx; ix++) {
       for (let iy = ay; iy <= by; iy++) {
         const tx = ((ix % n) + n) % n, ty = ((iy % n) + n) % n;
@@ -83,7 +87,7 @@ export class Tiles {
       }
     }
     ctx.setTransform(m);
-    this.#evict(frame, (bx - ax + 1) * (by - ay + 1));
+    this.#evict(frame, (bx - ax + 1) * (by - ay + 1), (left + right) / 2, (top + bottom) / 2, (right - left) / 2, (bottom - top) / 2);
   }
 
   // 貼る位置をデバイス px に丸める（端数の位置に貼ると、区画の継ぎ目に細い筋が出る）
@@ -108,7 +112,17 @@ export class Tiles {
   }
 
   // 保持する上限は「画面に映る枚数 × 1.5」。超えたら最後に映ったのが古い順に捨てる
-  #evict(frame, visible) {
+  #evict(frame, visible, cx, cy, halfW, halfH) {
+    // 画面の外へ区画 1 枚分以上離れた区画は捨てる
+    const s = this.size, reachX = halfW + s * 1.5, reachY = halfH + s * 1.5;
+    for (const [key, tile] of this.cache) {
+      if (tile.seen === frame) continue;
+      const tx = Math.floor(key / this.n), ty = key % this.n;
+      if (Math.abs(wrapDiff((tx + 0.5) * s, cx, this.side)) > reachX || Math.abs(wrapDiff((ty + 0.5) * s, cy, this.side)) > reachY) {
+        this.cache.delete(key);
+        this.#release(tile);
+      }
+    }
     const limit = Math.ceil(visible * 1.5) + 4;
     if (this.cache.size <= limit) return;
     const old = [...this.cache.entries()].filter(([, t]) => t.seen < frame).sort((a, b) => a[1].seen - b[1].seen);

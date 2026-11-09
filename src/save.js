@@ -2,7 +2,7 @@
 // - 線は 1 フレーム約 4ms までずつ、数フレームに分けて描く（点P を止めないように）
 // - 終わったら保存用のキャンバスを手放し、Blob URL も少し遅らせて手放す
 import { COLOR, GRID, MAJOR } from "./tokens.js";
-import { forEachCopy } from "./world.js";
+import { addLineWithCopies } from "./world.js";
 
 const BUDGET_MS = 4;
 
@@ -57,9 +57,8 @@ async function drawLines(g, { points, flags, count, styleOf }, side) {
       if (flags[i] & 1) continue;
       const st = styleOf(i);
       if (st !== style) { g.stroke(); g.beginPath(); style = st; g.strokeStyle = st.color; g.lineWidth = st.width; }
-      const x0 = points[i * 2 - 2], y0 = points[i * 2 - 1], x1 = points[i * 2], y1 = points[i * 2 + 1];
       // 端の近くの太い線は、はみ出した分を反対側にも描く（画面と同じく、つながって見えるように）
-      forEachCopy(x0, y0, x1, y1, st.width / 2, side, (sx, sy) => { g.moveTo(x0 + sx, y0 + sy); g.lineTo(x1 + sx, y1 + sy); });
+      addLineWithCopies(g, points[i * 2 - 2], points[i * 2 - 1], points[i * 2], points[i * 2 + 1], st.width / 2, side);
     }
     g.stroke();
     if (i < count) await new Promise((resolve) => requestAnimationFrame(resolve));

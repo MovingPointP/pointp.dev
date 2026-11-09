@@ -16,12 +16,12 @@ export function wrapDiff(a, b, side) {
   return d > side / 2 ? d - side : d;
 }
 
-// 線分（太さの半分 pad を含む）が世界の端からはみ出す分を、反対側に描くためのずらし量を順に渡す（0, 0 を含む）
-export function forEachCopy(x0, y0, x1, y1, pad, side, fn) {
+// 線分をパスに足す。太さの半分 pad を含めて世界の端からはみ出す分は、反対側にも足す
+export function addLineWithCopies(g, x0, y0, x1, y1, pad, side) {
   const sx = Math.min(x0, x1) - pad < 0 ? side : Math.max(x0, x1) + pad > side ? -side : 0;
   const sy = Math.min(y0, y1) - pad < 0 ? side : Math.max(y0, y1) + pad > side ? -side : 0;
-  fn(0, 0);
-  if (sx) fn(sx, 0);
-  if (sy) fn(0, sy);
-  if (sx && sy) fn(sx, sy);
+  g.moveTo(x0, y0); g.lineTo(x1, y1);
+  if (sx) { g.moveTo(x0 + sx, y0); g.lineTo(x1 + sx, y1); }
+  if (sy) { g.moveTo(x0, y0 + sy); g.lineTo(x1, y1 + sy); }
+  if (sx && sy) { g.moveTo(x0 + sx, y0 + sy); g.lineTo(x1 + sx, y1 + sy); }
 }

@@ -17,6 +17,7 @@ export class Hint {
     this.game = game;
     this.next = null; // 次に見せる時刻（ゲームの中の時計）
     this.again = true;
+    this.push = [0, 0];
     game.hooks.push(() => this.#update());
     const onPlay = game.onPlay, onTouch = game.onTouch;
     game.onPlay = () => {
@@ -44,7 +45,8 @@ export class Hint {
     // 2 回押し出して戻る
     const k = Math.sin(Math.PI * ((t * 2) % 1));
     g.hintActive = true;
-    g.knobOverride = g.reduceMotion ? null : [g.dir[0] * PUSH * k, g.dir[1] * PUSH * k];
+    this.push[0] = g.dir[0] * PUSH * k; this.push[1] = g.dir[1] * PUSH * k;
+    g.knobOverride = g.reduceMotion ? null : this.push;
   }
 
   #stop() {

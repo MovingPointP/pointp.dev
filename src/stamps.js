@@ -15,6 +15,7 @@ const ICONS = {
   save: [["M0 -7v10M-4.5 -1.5L0 3l4.5 -4.5M-7 7h14", 2]],
 };
 const WARN = "M0 -8.5L8 5.5H-8z";
+let warnPath = null;
 
 // 種類ごとの画像（解像度は devicePixelRatio 2 まで）
 export function makeStampSprites(dpr) {
@@ -53,7 +54,8 @@ export function makeStampSprites(dpr) {
 export function drawWarning(g, x, y) {
   g.save();
   g.translate(x, y); g.scale(ICON_SCALE, ICON_SCALE);
-  const path = new Path2D(WARN);
+  warnPath ??= new Path2D(WARN);
+  const path = warnPath;
   g.fillStyle = COLOR.warning; g.fill(path);
   g.strokeStyle = COLOR.text; g.lineWidth = 1.25; g.lineJoin = "round"; g.stroke(path);
   g.beginPath(); g.moveTo(0, -3); g.lineTo(0, 0.5); g.lineWidth = 1.5; g.lineCap = "round"; g.stroke();

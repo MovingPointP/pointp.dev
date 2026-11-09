@@ -23,6 +23,10 @@ const MANY = 30_000; // 点がこれより多いときは、点線をやめて�
 const ERASE_MARGIN = 256; // その画像に入れる、画面の外の幅（消えていく間にカメラが動く分）
 const SHAKE = 0.4; // 保存できなかったとき、スタンプが横に揺れる
 
+// 点P の形（毎フレーム作らない）
+const ROUND = { along: 1, across: 1, haloInk: false };
+const SHAPE = { along: 1, across: 1, haloInk: false };
+
 export class Points {
   constructor(game, flash) {
     this.game = game;
@@ -75,7 +79,7 @@ export class Points {
   #update() {
     const g = this.game;
     if (g.phase !== "zoom" && g.phase !== "free") return;
-    const prev = g.prevP ?? g.p, side = g.side, r = STAMP_SIZE / 2;
+    const prev = g.prevP, side = g.side, r = STAMP_SIZE / 2;
     for (const pt of this.list) {
       // 前のフレームの位置から今の位置までの線分で判定する（間隔が長いフレームでも飛び越さないように）
       // 前の位置は「今の位置 − 動いた量」で求める（別々に端で折り返すと、反対側で線分が裏返る）
@@ -125,8 +129,9 @@ export class Points {
     canvas.width = Math.ceil(w * scale); canvas.height = Math.ceil(h * scale);
     const c = canvas.getContext("2d");
     if (!c) { canvas.width = canvas.height = 0; return null; }
-    c.setTransform(scale, 0, 0, scale, -left * scale, -top * scale);
-    g.tiles.draw(c, left, top, left + w, top + h, g.frame);
+    const m = { a: scale, d: scale, e: -left * scale, f: -top * scale };
+    c.setTransform(m);
+    g.tiles.draw(c, m, left, top, left + w, top + h, g.frame);
     return { canvas, cx: cam.x, cy: cam.y, w, h };
   }
 
@@ -236,14 +241,15 @@ export class Points {
   // 速さが変わった瞬間だけ、点P が進む向きに伸びる（加速）か、つぶれる（減速）
   #pointShape() {
     const s = this.shape, g = this.game;
-    if (!s) return { along: 1, across: 1, haloInk: false };
+    if (!s) return ROUND;
     const t = g.time - s.at;
-    if (t > SHAPE_IN + SHAPE_OUT) { this.shape = null; return { along: 1, across: 1, haloInk: false }; }
+    if (t > SHAPE_IN + SHAPE_OUT) { this.shape = null; return ROUND; }
     const k = t < SHAPE_IN ? 1 - Math.pow(1 - t / SHAPE_IN, 3) : Math.pow(1 - (t - SHAPE_IN) / SHAPE_OUT, 3);
     // 動きを減らす設定では形を変えず、縁取りを一瞬インクの色にする
-    if (g.reduceMotion) return { along: 1, across: 1, haloInk: k > 0.05 };
+    if (g.reduceMotion) { SHAPE.along = SHAPE.across = 1; SHAPE.haloInk = k > 0.05; return SHAPE; }
     const faster = s.type === "faster";
-    return { along: 1 + (faster ? 0.7 : -0.4) * k, across: 1 + (faster ? -0.25 : 0.25) * k, haloInk: false };
+    SHAPE.along = 1 + (faster ? 0.7 : -0.4) * k; SHAPE.across = 1 + (faster ? -0.25 : 0.25) * k; SHAPE.haloInk = false;
+    return SHAPE;
   }
 }
 

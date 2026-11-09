@@ -2,7 +2,7 @@
 // - 線の画像（base）と、点P・見えている範囲・ポイント（overlay）を、キャンバスを分けて重ねる
 // - 線の画像には新しい分だけ描き足し、上の層だけを毎フレーム描き直す
 import { COLOR, P_HALO } from "./tokens.js";
-import { forEachCopy } from "./world.js";
+import { addLineWithCopies } from "./world.js";
 
 const REDRAW_BUDGET_MS = 4;
 const REDRAW_CHUNK = 20_000; // 時間を確かめる間隔（線分の数）
@@ -98,14 +98,13 @@ export class Minimap {
         g.stroke(); g.beginPath();
         style = st; g.strokeStyle = st.color; g.lineWidth = Math.max(this.minWidth, st.width);
       }
-      const x0 = pts[i * 2 - 2], y0 = pts[i * 2 - 1], x1 = pts[i * 2], y1 = pts[i * 2 + 1];
-      forEachCopy(x0, y0, x1, y1, g.lineWidth / 2, this.side, (sx, sy) => { g.moveTo(x0 + sx, y0 + sy); g.lineTo(x1 + sx, y1 + sy); });
+      addLineWithCopies(g, pts[i * 2 - 2], pts[i * 2 - 1], pts[i * 2], pts[i * 2 + 1], g.lineWidth / 2, this.side);
     }
     g.stroke();
   }
 
   // 上の層: 見えている範囲の枠と点P（ポイントは points に { x, y, warning } を渡す）
-  drawOverlay(px, py, viewWidth, viewHeight, ink, points = []) {
+  drawOverlay(px, py, viewWidth, viewHeight, ink, points) {
     if (!this.px) return;
     const g = this.og, k = this.k, dpr = devicePixelRatio || 1;
     g.setTransform(1, 0, 0, 1, 0, 0);
@@ -118,7 +117,7 @@ export class Minimap {
     // 見えている範囲。端をまたぐと分かれるので、写しも描いて世界の外は切れるに任せる
     g.strokeStyle = COLOR.muted; g.lineWidth = dpr / k; g.setLineDash([2 * dpr / k, 2 * dpr / k]);
     const x0 = px - viewWidth / 2, y0 = py - viewHeight / 2;
-    for (const ox of [-this.side, 0, this.side]) for (const oy of [-this.side, 0, this.side]) g.strokeRect(x0 + ox, y0 + oy, viewWidth, viewHeight);
+    for (let ox = -1; ox <= 1; ox++) for (let oy = -1; oy <= 1; oy++) g.strokeRect(x0 + ox * this.side, y0 + oy * this.side, viewWidth, viewHeight);
     g.setLineDash([]);
     g.beginPath(); g.arc(px, py, 3.5 * dpr / k, 0, Math.PI * 2);
     g.fillStyle = ink; g.fill();
@@ -131,7 +130,7 @@ export class Minimap {
     g.setTransform(this.k, 0, 0, this.k, 0, 0);
     g.lineCap = "round"; g.strokeStyle = color; g.lineWidth = Math.max(this.minWidth, width);
     g.beginPath();
-    forEachCopy(x0, y0, x1, y1, g.lineWidth / 2, this.side, (sx, sy) => { g.moveTo(x0 + sx, y0 + sy); g.lineTo(x1 + sx, y1 + sy); });
+    addLineWithCopies(g, x0, y0, x1, y1, g.lineWidth / 2, this.side);
     g.stroke();
   }
 }

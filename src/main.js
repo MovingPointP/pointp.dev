@@ -20,12 +20,14 @@ const flash = () => flashLayer.animate(
 );
 
 // ポイントは、自己紹介を書いている間の空いた時間に置く（遊べる大きさの画面だけ）
-if (game.playable) {
+const setUpPlay = () => {
   const points = new Points(game, flash);
   (window.requestIdleCallback ?? setTimeout)(() => points.place());
   game.onPlay = () => points.place();
   new Hint(game);
-}
+};
+// 小さく開いた画面は、遊べる大きさになったときに用意する
+if (game.playable) setUpPlay(); else game.onPlayable = setUpPlay;
 
 addEventListener("resize", () => game.resize());
 // devicePixelRatio が変わったとき（ブラウザの拡大縮小、解像度の違うモニターへの移動）は描き直す
