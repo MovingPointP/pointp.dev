@@ -316,24 +316,22 @@ impeccable の harden で洗い出した。本番の実装で入れる。
 - 第三者のスクリプトは読み込まない。アクセス解析・Cookie・広告・SNS の埋め込みは使わない（同意の表示やプライバシーポリシーも要らない）
 - localStorage は、ジョイスティックに触ったかどうかの 1 キーだけにする。`"1"` 以外の値は「まだ触っていない」として扱う
 - 「P」の文字の書体（STIX Two Text）は、「P」1 文字だけに絞った woff2 を自前で配信する（Google へ閲覧者の情報が送られないように。CSP も自分のサイトだけで済む）。SIL OFL のライセンス文を一緒に置く。Reserved Font Name があれば、絞った版の中のフォント名を変える
-- セキュリティヘッダーは Nginx で付ける。`always` を付けて 404 などにも付ける。HSTS だけは Cloudflare で付ける
-  - Content-Security-Policy: `default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; connect-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; require-trusted-types-for 'script'`
-  - `X-Content-Type-Options: nosniff`、`Referrer-Policy: no-referrer`、`X-Frame-Options: DENY`、`Cross-Origin-Opener-Policy: same-origin`、`Cross-Origin-Resource-Policy: same-origin`
+- セキュリティヘッダーは Nginx と Cloudflare で付ける。Nginx では `always` を付けて 404 などにも付ける。HSTS は Cloudflare で付ける
+  - Cloudflare のルール `Security headers`（katarina-infra の docs/cloudflare/https.md）が、CSP・`Referrer-Policy`・`Permissions-Policy`・`X-Frame-Options`・`Cross-Origin-Opener-Policy` を固定値で設定する。同じ名前のヘッダーは、本番では Cloudflare の値が効く
+  - CSP は Cloudflare の値（`frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'; upgrade-insecure-requests`）だけにし、Nginx では付けない。スクリプトの読み込みは制限しない。Cloudflare がページにスクリプトを差し込むため。厳しい CSP（`script-src 'self'` など）を本番で `Report-Only` にして確かめたところ、自分のページの違反はなく、違反はすべて Cloudflare のもの（Precursor・Web Analytics・AI Labyrinth）だった。差し込みのインラインのスクリプトはアクセスごとに中身が変わり、ハッシュで許可できない。入力欄もログインもない静的なページなのでリスクは小さいと判断した
+  - Nginx が付けるもの: `X-Content-Type-Options: nosniff`、`Referrer-Policy: no-referrer`、`X-Frame-Options: DENY`、`Cross-Origin-Opener-Policy: same-origin`、`Cross-Origin-Resource-Policy: same-origin`
   - `Permissions-Policy: accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=(), browsing-topics=()`
   - Nginx の `add_header` は、location の中に 1 つでもあると server の分を引き継がない。共通のヘッダーは別のファイル（拡張子は `.conf` 以外。`conf.d/*.conf` は自動で読み込まれるため）にまとめ、各 location で `include` する
-  - 上の CSP は、今は `Content-Security-Policy-Report-Only` として出している（何も止めず、違反をコンソールに出すだけ）。本番では Cloudflare のルール `Security headers` が `Content-Security-Policy` を固定値で設定するので、効くのはそちらの見込み。Cloudflare はページにスクリプトを差し込むので、本番のコンソールで何が違反になるかを見てから、次のどちらにするかを決める
-    - Cloudflare の CSP のままにする（入力欄もログインもない静的なページなので、リスクは小さい）
-    - `pointp.dev` を Cloudflare のルールから外し、Nginx の CSP を効かせる
-- HSTS（Cloudflare）: `max-age=31536000; includeSubDomains`。preload は付けない（`.dev` は TLD ごと preload 済み）。Always Use HTTPS をオン、Minimum TLS は 1.2
+- HSTS（Cloudflare）: `max-age=15552000; includeSubDomains`（6 か月）。preload は付けない（`.dev` は TLD ごと preload 済み）。Always Use HTTPS をオン、Minimum TLS は 1.2
 - Nginx: GET と HEAD 以外は 405 を返す。隠しファイル（`/.` で始まるパス。`/.well-known/` を除く）は 404 を返す。404 ページは自前の `404.html` を出す
-- Cloudflare がページにスクリプトを差し込む機能（Precursor・AI Labyrinth など。katarina-infra の docs/cloudflare/bots.md）を切るかは、上の Report-Only の結果を見て決める。今は切らない
+- Cloudflare がページにスクリプトを差し込む機能（Precursor・AI Labyrinth・Web Analytics）は切らない。Rocket Loader はオフのままにする（スクリプトの動くタイミングが変わるため）
 - アクセスログは残すが、容量に上限を付ける（compose の `logging.options.max-size`）
 - security.txt は置かない（連絡先を出さないため）
 
 ## 読み込みとキャッシュ
 
 - 目標
-  - 最初の 1 フレームを出すまで、外部のサイトには取りに行かない
+  - 最初の 1 フレームを出すまで、外部のサイトには取りに行かない（Cloudflare が差し込む Web Analytics は例外。ページはその読み込みを待たない）
   - 初回の転送量は、HTML・CSS・JS・自己紹介のデータを合わせて圧縮後 50KB 以下（目安は 30KB。アイコンと OGP 画像は数えない）
   - JS が動き始めてから最初のフレームまでの処理は、中くらいのスマホ（DevTools の CPU 4 倍遅延）で 50ms 以下
   - 書き始めまでの時間は、Lighthouse のモバイル設定（Slow 4G）で 1.5 秒以下、PC の光回線で 0.5 秒以下。Canvas は LCP の対象にならないので、書き始めの瞬間に `performance.mark('intro-start')` を打って測る
