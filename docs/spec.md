@@ -321,10 +321,12 @@ impeccable の harden で洗い出した。本番の実装で入れる。
   - `X-Content-Type-Options: nosniff`、`Referrer-Policy: no-referrer`、`X-Frame-Options: DENY`、`Cross-Origin-Opener-Policy: same-origin`、`Cross-Origin-Resource-Policy: same-origin`
   - `Permissions-Policy: accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=(), browsing-topics=()`
   - Nginx の `add_header` は、location の中に 1 つでもあると server の分を引き継がない。共通のヘッダーは別のファイル（拡張子は `.conf` 以外。`conf.d/*.conf` は自動で読み込まれるため）にまとめ、各 location で `include` する
-  - CSP は、まず `Content-Security-Policy-Report-Only` として `compose.dev.yaml` で確かめ、違反が出ないことを確かめてから本番に切り替える
+  - 上の CSP は、今は `Content-Security-Policy-Report-Only` として出している（何も止めず、違反をコンソールに出すだけ）。本番では Cloudflare のルール `Security headers` が `Content-Security-Policy` を固定値で設定するので、効くのはそちらの見込み。Cloudflare はページにスクリプトを差し込むので、本番のコンソールで何が違反になるかを見てから、次のどちらにするかを決める
+    - Cloudflare の CSP のままにする（入力欄もログインもない静的なページなので、リスクは小さい）
+    - `pointp.dev` を Cloudflare のルールから外し、Nginx の CSP を効かせる
 - HSTS（Cloudflare）: `max-age=31536000; includeSubDomains`。preload は付けない（`.dev` は TLD ごと preload 済み）。Always Use HTTPS をオン、Minimum TLS は 1.2
 - Nginx: GET と HEAD 以外は 405 を返す。隠しファイル（`/.` で始まるパス。`/.well-known/` を除く）は 404 を返す。404 ページは自前の `404.html` を出す
-- Cloudflare で、ページにスクリプトを差し込む機能（Rocket Loader・Email Obfuscation・Web Analytics の自動設定・Zaraz・Bot Fight Mode の JS challenge）は切る
+- Cloudflare がページにスクリプトを差し込む機能（Precursor・AI Labyrinth など。katarina-infra の docs/cloudflare/bots.md）を切るかは、上の Report-Only の結果を見て決める。今は切らない
 - アクセスログは残すが、容量に上限を付ける（compose の `logging.options.max-size`）
 - security.txt は置かない（連絡先を出さないため）
 
