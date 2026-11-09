@@ -108,7 +108,7 @@ export class Game {
       }
       this.joystick.setKnob(this.knob[0], this.knob[1]);
     }
-    if (this.trail.compactIfNeeded()) { this.tiles.clear(); this.minimap.redrawGradually(); }
+    if (this.trail.compactIfNeeded()) { this.tiles.markStale(); this.minimap.redrawGradually(); }
     this.minimap.continueRedraw();
   }
 
@@ -232,8 +232,12 @@ export class Game {
     const top = cam.y - h / 2 / cam.z, bottom = cam.y + h / 2 / cam.z;
     this.#drawGrid(left, top, right, bottom, cam.z);
     // 自己紹介を書いている間とカメラが寄る間は、区画を使わず座標データから直接描く
-    if (free) this.tiles.draw(ctx, v, left, top, right, bottom, this.frame, this.dir[0], this.dir[1]);
-    else this.#drawTrailDirect();
+    if (free) {
+      this.tiles.draw(ctx, v, left, top, right, bottom, this.frame, this.dir[0], this.dir[1]);
+      this.drawLive(ctx, left, top, right, bottom);
+    } else {
+      this.#drawTrailDirect();
+    }
     for (const draw of this.overlays ?? []) draw(ctx, cam, left, top, right, bottom);
     this.#drawPoint(cam);
     if (this.phase !== "intro" && this.phase !== "rest") {
@@ -242,8 +246,32 @@ export class Game {
     }
   }
 
+  // 進行中の線（まだ区画に描いていない分）を、画面に映る写しの上に重ねる
+  drawLive(ctx, left, top, right, bottom) {
+    const t = this.trail, pts = t.points, st = t.liveStyle, side = this.side, pad = st.width / 2 + 1;
+    let minX = pts[t.committed * 2 - 2], maxX = minX, minY = pts[t.committed * 2 - 1], maxY = minY;
+    for (let i = t.committed; i < t.count; i++) {
+      minX = Math.min(minX, pts[i * 2]); maxX = Math.max(maxX, pts[i * 2]);
+      minY = Math.min(minY, pts[i * 2 + 1]); maxY = Math.max(maxY, pts[i * 2 + 1]);
+    }
+    const bx = Math.round(((left + right) - (minX + maxX)) / 2 / side) * side, by = Math.round(((top + bottom) - (minY + maxY)) / 2 / side) * side;
+    ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.strokeStyle = st.color; ctx.lineWidth = st.width;
+    ctx.beginPath();
+    for (let ox = -1; ox <= 1; ox++) {
+      for (let oy = -1; oy <= 1; oy++) {
+        const sx = bx + ox * side, sy = by + oy * side;
+        if (maxX + sx + pad < left || minX + sx - pad > right || maxY + sy + pad < top || minY + sy - pad > bottom) continue;
+        t.traceLive(ctx, sx, sy);
+      }
+    }
+    ctx.stroke();
+  }
+
   #drawGrid(left, top, right, bottom, z) {
+    // 引いている間は細い線を薄くする（マス目が詰まって、字より方眼が目立つため）
+    this.ctx.globalAlpha = Math.max(0.25, Math.min(1, z));
     this.#gridLines(left, top, right, bottom, z, GRID, COLOR.gridMinor, 1);
+    this.ctx.globalAlpha = 1;
     this.#gridLines(left, top, right, bottom, z, MAJOR, COLOR.gridMajor, 1);
     this.#gridLines(left, top, right, bottom, z, this.side, COLOR.worldEdge, 2);
   }

@@ -3,10 +3,13 @@
 // - 線分 i は点 i−1 から点 i まで。点 i に BREAK が付いていたら、線分 i は描かない（端をまたいだ切れ目）
 // - 最後の点（頭）は、向きが変わるまで動かして伸ばす（直進の間は点が増えない）
 // - 区画ごとに、その区画を通る線分の番号の範囲（目次）を持つ
+// - 線分 committed より後ろは、まだ区画やミニマップに描いていない進行中の線。毎フレーム上に重ねて描き、ある程度たまったら 1 回だけ描き足す
+//   （毎フレーム描き足すと、同じふちを何度も塗ってふちが濃くなり、作り直した絵と変わるため）
 
 const BREAK = 1;
 const MAX_POINTS = 2_000_000; // 上限（16MB）。超えたら古い線から消す
 const MIN_STEP = 2; // 向きが変わっても、前の点から 2px 未満なら点を足さない
+const COMMIT_POINTS = 32; // 進行中の線の点がこれだけたまったら描き足す
 
 // 線分 i の見た目（runs のうち start ≤ i の最後のもの）
 export function styleAt(runs, i) {
@@ -35,10 +38,11 @@ export class Trail {
     this.runs = []; // [{ start, color, width }]。線分 i の見た目は start ≤ i の最後の run
     this.index = new Map(); // 区画のキー → [開始, 終了, 開始, 終了, …]（線分の番号の範囲）
     this.turnPending = false;
+    this.committed = 1; // 描き足していない最初の線分
   }
 
-  // 新しい線分が増えたとき・頭が動いたときに、描き足す相手（区画・ミニマップ）を登録する
-  onSegment(fn) { this.listeners.add(fn); }
+  // 描き足す相手（区画・ミニマップ）を登録する。線分 from〜end−1 を渡す（切れ目は含まない）
+  onCommit(fn) { this.listeners.add(fn); }
 
   get headX() { return this.points[(this.count - 1) * 2]; }
   get headY() { return this.points[(this.count - 1) * 2 + 1]; }
@@ -53,38 +57,51 @@ export class Trail {
   // 点を足す（自己紹介を書くときなど、決まった折れ線をなぞるとき）
   add(x, y) {
     this.#push(x, y, 0);
-    this.#afterChange(this.count - 1, this.headPrevX, this.headPrevY);
+    this.#indexSegment(this.count - 1);
+    this.#commitIfMany();
   }
 
   // 頭を動かして伸ばす。turned は向きが変わったか
   extend(x, y, turned) {
     // 前の点から 2px 未満で曲がったら、2px 進んでから角を打つ（角を打たないと、作り直したときに長い線全体がずれる）
     this.turnPending ||= turned;
-    if (this.turnPending && this.#distanceFromPrev() >= MIN_STEP) { this.#freeze(); this.turnPending = false; }
-    const fromX = this.headX, fromY = this.headY;
+    if (this.turnPending && this.#distanceFromPrev() >= MIN_STEP) { this.#freeze(); this.turnPending = false; this.#commitIfMany(); }
     const i = this.count - 1;
     this.points[i * 2] = x;
     this.points[i * 2 + 1] = y;
-    this.#afterChange(i, fromX, fromY);
+    this.#indexSegment(i);
   }
 
   // 見た目を変える（色・太さのポイントを通ったとき）。今の頭で線を区切り、そこから新しい見た目にする
   setStyle(color, width) {
     this.#freeze();
+    this.#commit(this.count - 1);
     this.runs.push({ start: this.count - 1, color, width });
   }
 
   // 端をまたいだ: 今の線を世界の外の点で閉じ（呼ぶ前に extend 済み）、反対側から新しい線を始める
   wrapTo(fromX, fromY, toX, toY) {
+    this.#commit(this.count);
     this.#push(fromX, fromY, BREAK);
     this.#push(toX, toY, 0);
-    this.#afterChange(this.count - 1, fromX, fromY);
+    this.committed = this.count - 1;
+    this.#indexSegment(this.count - 1);
   }
 
   get headPrevX() { return this.points[(this.count - 2) * 2]; }
   get headPrevY() { return this.points[(this.count - 2) * 2 + 1]; }
 
   styleOf(i) { return styleAt(this.runs, i); }
+
+  // 進行中の線の見た目
+  get liveStyle() { return this.styleOf(this.committed); }
+
+  // 進行中の線（線分 committed〜頭）を、ずらしてパスに足す
+  traceLive(g, sx, sy) {
+    const pts = this.points;
+    g.moveTo(pts[this.committed * 2 - 2] + sx, pts[this.committed * 2 - 1] + sy);
+    for (let i = this.committed; i < this.count; i++) g.lineTo(pts[i * 2] + sx, pts[i * 2 + 1] + sy);
+  }
 
   isBreak(i) { return (this.flags[i] & BREAK) !== 0; }
 
@@ -99,6 +116,7 @@ export class Trail {
     this.points.copyWithin(0, drop * 2, this.count * 2);
     this.flags.copyWithin(0, drop, this.count);
     this.count -= drop;
+    this.committed = Math.max(1, this.committed - drop);
     this.flags[0] |= BREAK;
     this.runs = this.runs.map((r) => ({ ...r, start: Math.max(0, r.start - drop) }))
       .filter((r, k, all) => k === all.length - 1 || all[k + 1].start > r.start);
@@ -140,13 +158,16 @@ export class Trail {
     return Math.hypot(this.headX - this.headPrevX, this.headY - this.headPrevY);
   }
 
-  // 線分 i が変わった: 目次を更新し、描き足す相手に「from から点 i まで」を知らせる
-  #afterChange(i, fromX, fromY) {
-    if (this.isBreak(i)) return;
-    this.#indexSegment(i);
-    const style = this.styleOf(i);
-    const x = this.points[i * 2], y = this.points[i * 2 + 1];
-    for (const fn of this.listeners) fn(fromX, fromY, x, y, style.color, style.width);
+  // 頭の手前まで（動かなくなった線分）がたまったら描き足す
+  #commitIfMany() {
+    if (this.count - 1 - this.committed >= COMMIT_POINTS) this.#commit(this.count - 1);
+  }
+
+  #commit(end) {
+    if (end <= this.committed) return;
+    const from = this.committed;
+    this.committed = end;
+    for (const fn of this.listeners) fn(from, end);
   }
 
   // 線分 i が通る区画に、番号 i を記録する

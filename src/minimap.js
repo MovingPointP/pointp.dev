@@ -17,7 +17,12 @@ export class Minimap {
     this.overlay = root.querySelector(".minimap-overlay");
     this.bg = this.base.getContext("2d");
     this.og = this.overlay.getContext("2d");
-    trail.onSegment((x0, y0, x1, y1, color, width) => this.#drawSegment(x0, y0, x1, y1, color, width));
+    trail.onCommit((from, end) => {
+      if (!this.px) return;
+      this.bg.setTransform(this.k, 0, 0, this.k, 0, 0);
+      this.bg.lineCap = "round"; this.bg.lineJoin = "round";
+      this.#drawRange(this.bg, from, end);
+    });
   }
 
   // 表示サイズや解像度が変わったら、座標データから描き直す
@@ -42,7 +47,7 @@ export class Minimap {
     if (!this.px) return;
     this.#dropPending();
     this.#begin(this.bg);
-    this.#drawRange(this.bg, 1, this.trail.count);
+    this.#drawRange(this.bg, 1, this.trail.committed);
   }
 
   // 点が多いとき用: 裏のキャンバスに数フレームかけて描き、描き終えたら差し替える（その間は今の画像のまま）
@@ -62,12 +67,12 @@ export class Minimap {
     const p = this.pending;
     if (!p) return;
     const until = performance.now() + REDRAW_BUDGET_MS;
-    while (p.next < this.trail.count && performance.now() < until) {
-      const end = Math.min(this.trail.count, p.next + REDRAW_CHUNK);
+    while (p.next < this.trail.committed && performance.now() < until) {
+      const end = Math.min(this.trail.committed, p.next + REDRAW_CHUNK);
       this.#drawRange(p.g, p.next, end);
       p.next = end;
     }
-    if (p.next < this.trail.count) return;
+    if (p.next < this.trail.committed) return;
     this.bg.setTransform(1, 0, 0, 1, 0, 0);
     this.bg.clearRect(0, 0, this.px, this.px);
     this.bg.drawImage(p.canvas, 0, 0);
@@ -110,6 +115,7 @@ export class Minimap {
     g.setTransform(1, 0, 0, 1, 0, 0);
     g.clearRect(0, 0, this.px, this.px);
     g.setTransform(k, 0, 0, k, 0, 0);
+    this.#drawLive(g);
     for (const p of points) {
       g.beginPath(); g.arc(p.x, p.y, (p.warning ? 2.8 : 2.2) * dpr / k, 0, Math.PI * 2);
       g.fillStyle = p.warning ? COLOR.warning : COLOR.borderStrong; g.fill();
@@ -124,13 +130,14 @@ export class Minimap {
     g.strokeStyle = COLOR.paper; g.lineWidth = (P_HALO / 2) * dpr / k; g.stroke();
   }
 
-  #drawSegment(x0, y0, x1, y1, color, width) {
-    if (!this.px) return;
-    const g = this.bg;
-    g.setTransform(this.k, 0, 0, this.k, 0, 0);
-    g.lineCap = "round"; g.strokeStyle = color; g.lineWidth = Math.max(this.minWidth, width);
+  // 進行中の線（まだ線の画像に描いていない分）
+  #drawLive(g) {
+    const t = this.trail, pts = t.points, st = t.liveStyle;
+    g.lineCap = "round"; g.lineJoin = "round"; g.strokeStyle = st.color; g.lineWidth = Math.max(this.minWidth, st.width);
     g.beginPath();
-    addLineWithCopies(g, x0, y0, x1, y1, g.lineWidth / 2, this.side);
+    for (let i = t.committed; i < t.count; i++) {
+      addLineWithCopies(g, pts[i * 2 - 2], pts[i * 2 - 1], pts[i * 2], pts[i * 2 + 1], g.lineWidth / 2, this.side);
+    }
     g.stroke();
   }
 }

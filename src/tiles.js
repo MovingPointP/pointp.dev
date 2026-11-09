@@ -1,7 +1,7 @@
 // 本画面の線を、区画ごとの画像として持つ。仕様は docs/spec.md の「描画の方針」
 // - 区画の大きさは、世界の 1 辺をちょうど割り切る 256px 前後
 // - 画像の解像度は devicePixelRatio 2 まで
-// - 画面に映る区画だけを持ち、新しい線は持っている区画に描き足す
+// - 画面に映る区画だけを持ち、新しい線は持っている区画に描き足す（進行中の線は描かない。trail.js を参照）
 // - まだできていない区画は、座標データから直接描く（1 フレームに作るのは約 4ms まで）
 
 import { wrapDiff } from "./world.js";
@@ -20,10 +20,12 @@ export class Tiles {
     this.cache = new Map(); // キー → { canvas, g, seen }
     this.pool = [];
     this.missing = [];
+    this.stale = [];
+    this.generation = 0;
     this.maxScale = 2;
     this.setScale(devicePixelRatio || 1);
     // 新しい線は、持っている区画にだけ描き足す
-    trail.onSegment((x0, y0, x1, y1, color, width) => this.#drawSegment(x0, y0, x1, y1, color, width));
+    trail.onCommit((from, end) => this.#drawCommitted(from, end));
   }
 
   // 解像度（devicePixelRatio、2 まで）。変わったら作り直す
@@ -45,6 +47,10 @@ export class Tiles {
     this.cache.clear();
   }
 
+  // 中身が古いかもしれない（消えた線がある、裏にいる間に消されたかもしれない）。
+  // 捨てずに見せたまま、数フレームかけて描き直す（一度に直接描くと、線が長いときに引っかかる）
+  markStale() { this.generation++; }
+
   // 画面に映る区画を描く。left・top などは世界の座標（端をまたぐので 0〜side の外にもなる）
   // dx・dy は進む向き（その先の区画から先に作る）
   // m は ctx に入っている変換（{ a, d, e, f }）
@@ -56,6 +62,8 @@ export class Tiles {
     ctx.setTransform(1, 0, 0, 1, 0, 0); // 区画はデバイス px で貼る
     const missing = this.missing;
     missing.length = 0;
+    const stale = this.stale;
+    stale.length = 0;
     for (let ix = ax; ix <= bx; ix++) {
       for (let iy = ay; iy <= by; iy++) {
         const tx = ((ix % n) + n) % n, ty = ((iy % n) + n) % n;
@@ -64,6 +72,7 @@ export class Tiles {
         if (tile) {
           tile.seen = frame;
           this.#blit(ctx, tile, ix, iy, m);
+          if (tile.generation !== this.generation) stale.push(tile);
         } else {
           missing.push({ ix, iy, tx, ty, d: Math.hypot((ix + 0.5) * s - cx, (iy + 0.5) * s - cy) });
         }
@@ -85,6 +94,9 @@ export class Tiles {
         this.#render(ctx, t.tx, t.ty, (t.ix - t.tx) * s, (t.iy - t.ty) * s);
         ctx.restore();
       }
+    }
+    for (const tile of stale) {
+      if (tile.generation !== this.generation && performance.now() < until) this.#paint(tile, tile.tx, tile.ty);
     }
     ctx.setTransform(m);
     this.#evict(frame, (bx - ax + 1) * (by - ay + 1), (left + right) / 2, (top + bottom) / 2, (right - left) / 2, (bottom - top) / 2);
@@ -141,12 +153,17 @@ export class Tiles {
       this.setScale(this.dpr);
       return null;
     }
+    this.#paint(tile, tx, ty);
+    this.cache.set(tx * this.n + ty, tile);
+    return tile;
+  }
+
+  #paint(tile, tx, ty) {
+    tile.tx = tx; tile.ty = ty; tile.generation = this.generation;
     tile.g.setTransform(1, 0, 0, 1, 0, 0);
     tile.g.clearRect(0, 0, this.px, this.px);
     tile.g.setTransform(this.k, 0, 0, this.k, -tx * this.size * this.k, -ty * this.size * this.k);
     this.#render(tile.g, tx, ty, 0, 0);
-    this.cache.set(tx * this.n + ty, tile);
-    return tile;
   }
 
   #create() {
@@ -167,13 +184,13 @@ export class Tiles {
   #render(g, tx, ty, ox, oy) {
     const ranges = this.trail.rangesOf(tx, ty);
     if (!ranges) return;
-    const pts = this.trail.points, side = this.side;
+    const pts = this.trail.points, side = this.side, last = this.trail.committed - 1;
     const cx = (tx + 0.5) * this.size, cy = (ty + 0.5) * this.size;
     g.lineCap = "round"; g.lineJoin = "round";
     let style = null, open = false, lastI = -2, lastSx = 0, lastSy = 0;
     const flush = () => { if (open) { g.stroke(); open = false; } };
     for (let r = 0; r < ranges.length; r += 2) {
-      for (let i = ranges[r]; i <= ranges[r + 1]; i++) {
+      for (let i = ranges[r], end = Math.min(ranges[r + 1], last); i <= end; i++) {
         if (this.trail.isBreak(i)) { flush(); lastI = -2; continue; }
         const st = this.trail.styleOf(i);
         if (st !== style) { flush(); style = st; g.strokeStyle = st.color; g.lineWidth = st.width; lastI = -2; }
@@ -191,19 +208,27 @@ export class Tiles {
     }
   }
 
-  // 新しい線分を、持っている区画のうち重なるものに描き足す
-  #drawSegment(x0, y0, x1, y1, color, width) {
-    const s = this.size, n = this.n, pad = width / 2 + 1;
-    for (let ix = Math.floor((Math.min(x0, x1) - pad) / s); ix <= Math.floor((Math.max(x0, x1) + pad) / s); ix++) {
-      for (let iy = Math.floor((Math.min(y0, y1) - pad) / s); iy <= Math.floor((Math.max(y0, y1) + pad) / s); iy++) {
+  // 線分 from〜end−1 を、持っている区画のうち重なるものに、1 本のパスとして描き足す
+  #drawCommitted(from, end) {
+    const s = this.size, n = this.n, pts = this.trail.points, style = this.trail.styleOf(from), pad = style.width / 2 + 1;
+    let minX = pts[from * 2 - 2], maxX = minX, minY = pts[from * 2 - 1], maxY = minY;
+    for (let i = from; i < end; i++) {
+      minX = Math.min(minX, pts[i * 2]); maxX = Math.max(maxX, pts[i * 2]);
+      minY = Math.min(minY, pts[i * 2 + 1]); maxY = Math.max(maxY, pts[i * 2 + 1]);
+    }
+    for (let ix = Math.floor((minX - pad) / s); ix <= Math.floor((maxX + pad) / s); ix++) {
+      for (let iy = Math.floor((minY - pad) / s); iy <= Math.floor((maxY + pad) / s); iy++) {
         const tx = ((ix % n) + n) % n, ty = ((iy % n) + n) % n;
         const tile = this.cache.get(tx * n + ty);
         if (!tile) continue;
         const g = tile.g;
         // 区画の座標系（tx, ty）に合わせて、線分を写しの位置からずらす
         g.setTransform(this.k, 0, 0, this.k, -ix * s * this.k, -iy * s * this.k);
-        g.lineCap = "round"; g.strokeStyle = color; g.lineWidth = width;
-        g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1); g.stroke();
+        g.lineCap = "round"; g.lineJoin = "round"; g.strokeStyle = style.color; g.lineWidth = style.width;
+        g.beginPath();
+        g.moveTo(pts[from * 2 - 2], pts[from * 2 - 1]);
+        for (let i = from; i < end; i++) g.lineTo(pts[i * 2], pts[i * 2 + 1]);
+        g.stroke();
       }
     }
   }

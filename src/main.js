@@ -32,9 +32,9 @@ if (game.playable) setUpPlay(); else game.onPlayable = setUpPlay;
 addEventListener("resize", () => game.resize());
 // キャンバスの中身が失われたら、区画・ミニマップ・スタンプの画像を作り直す
 // 裏から戻ったときは、知らせなしに消えていることがあるので、同じように作り直す
-const rebuild = () => { game.tiles.clear(); game.minimap.refresh(); game.points?.makeSprites(); game.render(); };
-canvas.addEventListener("contextrestored", rebuild);
-document.addEventListener("visibilitychange", () => { if (!document.hidden) rebuild(); });
+const rebuild = () => { game.minimap.refresh(); game.points?.makeSprites(); game.render(); };
+canvas.addEventListener("contextrestored", () => { game.tiles.clear(); rebuild(); });
+document.addEventListener("visibilitychange", () => { if (!document.hidden) { game.tiles.markStale(); rebuild(); } });
 
 // 確認用（自分の PC で開いたときだけ）
 // ?t=秒: その時刻まで一定の間隔で進めた場面を描いて止まる。?dir=角度: 書き終わったあとの向き
