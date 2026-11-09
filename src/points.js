@@ -224,7 +224,8 @@ export class Points {
     for (let i = 1; i < e.count; i++) {
       if (e.flags[i] & 1) { flush(); continue; }
       const x0 = e.points[i * 2 - 2], y0 = e.points[i * 2 - 1], x1 = e.points[i * 2], y1 = e.points[i * 2 + 1];
-      const sx = cx + wrapDiff(x0, cx, side) - x0, sy = cy + wrapDiff(y0, cy, side) - y0;
+      // ずらす量は 1 辺の整数倍に丸める（小数の誤差で毎回ちがう値になると、パスが線分ごとに切れる）
+      const sx = Math.round((cx + wrapDiff(x0, cx, side) - x0) / side) * side, sy = Math.round((cy + wrapDiff(y0, cy, side) - y0) / side) * side;
       if (Math.max(x0, x1) + sx < left - 24 || Math.min(x0, x1) + sx > right + 24 || Math.max(y0, y1) + sy < top - 24 || Math.min(y0, y1) + sy > bottom + 24) { flush(); continue; }
       const st = e.styleOf(i);
       if (st !== style) {
