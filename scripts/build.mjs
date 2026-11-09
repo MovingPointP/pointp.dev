@@ -56,6 +56,8 @@ async function writeHtml(metafile) {
     if (!html.includes(`"${name}"`)) throw new Error(`index.html に "${name}" がない`);
     html = html.replaceAll(`"${name}"`, `"${hashed}"`);
   }
+  // コメントは配信しない（ソースにだけ残す）
+  html = html.replace(/<!--[\s\S]*?-->\s*/g, "");
   await writeFile(new URL("index.html", out), html);
 }
 
