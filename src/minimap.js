@@ -6,6 +6,7 @@ import { forEachCopy } from "./world.js";
 
 const REDRAW_BUDGET_MS = 4;
 const REDRAW_CHUNK = 20_000; // 時間を確かめる間隔（線分の数）
+const MANY = 100_000; // 点がこれより多いときは、数フレームに分けて描き直す
 
 export class Minimap {
   constructor(root, trail) {
@@ -22,17 +23,24 @@ export class Minimap {
   // 表示サイズや解像度が変わったら、座標データから描き直す
   resize() {
     const dpr = devicePixelRatio || 1;
-    const css = this.root.clientWidth;
-    this.px = Math.max(1, Math.round(css * dpr));
+    const px = Math.max(1, Math.round(this.root.clientWidth * dpr));
+    if (px === this.px && dpr === this.dpr) return; // 大きさが同じなら描き直さない（アドレスバーの出入りなど）
+    this.px = px;
+    this.dpr = dpr;
     for (const c of [this.base, this.overlay]) c.width = c.height = this.px;
     this.k = this.px / this.side; // 世界の 1px → ミニマップの画素
     this.minWidth = dpr / this.k; // 線は最小 1px（CSS px）
-    this.redraw();
+    this.refresh();
+  }
+
+  // 座標データから描き直す（点が多いときは止まらないよう、数フレームに分ける）
+  refresh() {
+    if (this.trail.count > MANY) this.redrawGradually(); else this.redraw();
   }
 
   redraw() {
     if (!this.px) return;
-    this.pending = null;
+    this.#dropPending();
     this.#begin(this.bg);
     this.#drawRange(this.bg, 1, this.trail.count);
   }
@@ -40,9 +48,11 @@ export class Minimap {
   // 点が多いとき用: 裏のキャンバスに数フレームかけて描き、描き終えたら差し替える（その間は今の画像のまま）
   redrawGradually() {
     if (!this.px) return;
+    this.#dropPending();
     const canvas = document.createElement("canvas");
     canvas.width = canvas.height = this.px;
     const g = canvas.getContext("2d");
+    if (!g) { canvas.width = canvas.height = 0; return this.redraw(); }
     this.#begin(g);
     this.pending = { canvas, g, next: 1 };
   }
@@ -61,7 +71,11 @@ export class Minimap {
     this.bg.setTransform(1, 0, 0, 1, 0, 0);
     this.bg.clearRect(0, 0, this.px, this.px);
     this.bg.drawImage(p.canvas, 0, 0);
-    p.canvas.width = p.canvas.height = 0;
+    this.#dropPending();
+  }
+
+  #dropPending() {
+    if (this.pending) this.pending.canvas.width = this.pending.canvas.height = 0;
     this.pending = null;
   }
 

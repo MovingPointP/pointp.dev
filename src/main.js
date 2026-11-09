@@ -33,7 +33,10 @@ addEventListener("resize", () => game.resize());
   matchMedia(`(resolution: ${devicePixelRatio}dppx)`).addEventListener("change", () => { game.resize(); watchPixelRatio(); }, { once: true });
 })();
 // キャンバスの中身が失われたら、区画・ミニマップ・スタンプの画像を作り直す
-canvas.addEventListener("contextrestored", () => { game.tiles.clear(); game.minimap.redraw(); game.points?.makeSprites(); game.render(); });
+// 裏から戻ったときは、知らせなしに消えていることがあるので、同じように作り直す
+const rebuild = () => { game.tiles.clear(); game.minimap.refresh(); game.points?.makeSprites(); game.render(); };
+canvas.addEventListener("contextrestored", rebuild);
+document.addEventListener("visibilitychange", () => { if (!document.hidden) rebuild(); });
 
 // 確認用（自分の PC で開いたときだけ）
 // ?t=秒: その時刻まで一定の間隔で進めた場面を描いて止まる。?dir=角度: 書き終わったあとの向き

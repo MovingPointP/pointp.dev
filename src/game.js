@@ -199,7 +199,10 @@ export class Game {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.fillStyle = COLOR.paper;
     ctx.fillRect(0, 0, w, h);
-    ctx.setTransform(dpr * cam.z, 0, 0, dpr * cam.z, dpr * (w / 2 - cam.x * cam.z), dpr * (h / 2 - cam.y * cam.z));
+    // 寄り終わったら、カメラの位置をデバイス px に丸める（方眼のちらつきを防ぐ）
+    const free = this.phase === "free";
+    const ex = dpr * (w / 2 - cam.x * cam.z), ey = dpr * (h / 2 - cam.y * cam.z);
+    ctx.setTransform(dpr * cam.z, 0, 0, dpr * cam.z, free ? Math.round(ex) : ex, free ? Math.round(ey) : ey);
     const left = cam.x - w / 2 / cam.z, right = cam.x + w / 2 / cam.z;
     const top = cam.y - h / 2 / cam.z, bottom = cam.y + h / 2 / cam.z;
     this.#drawGrid(left, top, right, bottom, cam.z);

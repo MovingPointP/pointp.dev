@@ -62,12 +62,14 @@ export class Joystick {
   #listen() {
     const svg = this.svg;
     svg.addEventListener("pointerdown", (e) => {
-      if (this.pointer !== null) return; // 2 本目の指は無視する
+      if (this.pointer !== null || e.button !== 0) return; // 2 本目の指と、右ボタンなどは無視する
       this.pointer = e.pointerId;
       svg.setPointerCapture(e.pointerId);
       this.#move(e);
       this.onTurn(null, "down");
     });
+    // 長押しでメニューを出さない（タッチの Windows などでは、押している間に出る）
+    svg.addEventListener("contextmenu", (e) => e.preventDefault());
     svg.addEventListener("pointermove", (e) => { if (e.pointerId === this.pointer) this.#move(e); });
     const end = (e) => { if (e.pointerId === this.pointer) this.release(); };
     svg.addEventListener("pointerup", end);

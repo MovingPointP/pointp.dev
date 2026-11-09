@@ -33,7 +33,7 @@ export class Points {
     this.makeSprites();
     game.hooks.push((dt) => this.#update(dt));
     game.overlays = [(ctx, cam, l, t, r, b) => { this.#drawErasing(ctx, l, t, r, b); this.#drawStamps(ctx, cam, l, t, r, b); }];
-    game.minimapPoints = () => this.list.map((p) => ({ x: p.x, y: p.y, warning: p.kind === "clear" }));
+    game.minimapPoints = () => this.list;
     game.pointShape = () => this.#pointShape();
   }
 
@@ -62,7 +62,7 @@ export class Points {
           if (k.kind === "clear" && toIntro(x, y) < side * CLEAR_FROM_INTRO * loosen) continue;
           const tooClose = placed.some((p) => Math.hypot(wrapDiff(x, p.x, side), wrapDiff(y, p.y, side)) <
             side * (p.kind === k.kind && k.kind !== "color" ? SAME_KIND_DIST : MIN_DIST) * loosen);
-          if (!tooClose) found = { ...k, x, y, rot: (Math.random() - 0.5) * 12 * Math.PI / 180, inside: false, pressAt: -1, shakeAt: -1 };
+          if (!tooClose) found = { ...k, warning: k.kind === "clear", x, y, rot: (Math.random() - 0.5) * 12 * Math.PI / 180, inside: false, pressAt: -1, shakeAt: -1 };
         }
         if (!found) break;
         placed.push(found);
@@ -173,6 +173,7 @@ export class Points {
       // 写した画像のメモリを返す
       for (const c of [e.image?.canvas, e.minimap]) if (c) c.width = c.height = 0;
       this.erasing = null;
+      g.minimap.redraw(); // 古い線の残像を残さない
       return;
     }
     const k = 1 - Math.pow(1 - t, 3);
