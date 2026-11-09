@@ -143,6 +143,8 @@ export class Points {
   // ---- 描画 ----
   #drawStamps(ctx, cam, left, top, right, bottom) {
     const g = this.game, side = g.side, r = STAMP_SIZE / 2;
+    if (cam.k <= 0) return; // 自己紹介を書いている間は、線と点P だけにする
+    ctx.globalAlpha = cam.k; // カメラが寄るのに合わせて現れる
     for (const pt of this.list) {
       // 端をまたいだ写しのうち、カメラに近いものを描く
       const x = cam.x + wrapDiff(pt.x, cam.x, side), y = cam.y + wrapDiff(pt.y, cam.y, side);
@@ -162,6 +164,7 @@ export class Points {
       ctx.restore();
       if (pt.kind === "clear") drawWarning(ctx, x + shake + r * 0.85, y - r * 0.9);
     }
+    ctx.globalAlpha = 1;
   }
 
   // 消えていく線: 点線のすき間が広がって、かすれながら薄く細くなる

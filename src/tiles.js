@@ -43,11 +43,12 @@ export class Tiles {
   }
 
   // 画面に映る区画を描く。left・top などは世界の座標（端をまたぐので 0〜side の外にもなる）
-  draw(ctx, left, top, right, bottom, frame) {
+  // dx・dy は進む向き（その先の区画から先に作る）
+  draw(ctx, left, top, right, bottom, frame, dx = 0, dy = 0) {
     const s = this.size, n = this.n;
     const ax = Math.floor(left / s), bx = Math.floor(right / s);
     const ay = Math.floor(top / s), by = Math.floor(bottom / s);
-    const cx = (left + right) / 2, cy = (top + bottom) / 2;
+    const cx = (left + right) / 2 + dx * s, cy = (top + bottom) / 2 + dy * s;
     const m = ctx.getTransform();
     ctx.setTransform(1, 0, 0, 1, 0, 0); // 区画はデバイス px で貼る
     const missing = [];
@@ -64,7 +65,7 @@ export class Tiles {
         }
       }
     }
-    // 画面の中心に近い区画から、時間の許す限り作る。間に合わない区画は座標データから直接描く
+    // 画面の中心と進む向きに近い区画から、時間の許す限り作る。間に合わない区画は座標データから直接描く
     missing.sort((a, b) => a.d - b.d);
     const until = performance.now() + BUILD_BUDGET_MS;
     for (const t of missing) {

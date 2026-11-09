@@ -34,6 +34,7 @@ export class Trail {
     this.count = 0;
     this.runs = []; // [{ start, color, width }]。線分 i の見た目は start ≤ i の最後の run
     this.index = new Map(); // 区画のキー → [開始, 終了, 開始, 終了, …]（線分の番号の範囲）
+    this.turnPending = false;
   }
 
   // 新しい線分が増えたとき・頭が動いたときに、描き足す相手（区画・ミニマップ）を登録する
@@ -57,7 +58,9 @@ export class Trail {
 
   // 頭を動かして伸ばす。turned は向きが変わったか
   extend(x, y, turned) {
-    if (turned && this.#distanceFromPrev() >= MIN_STEP) this.#freeze();
+    // 前の点から 2px 未満で曲がったら、2px 進んでから角を打つ（角を打たないと、作り直したときに長い線全体がずれる）
+    this.turnPending ||= turned;
+    if (this.turnPending && this.#distanceFromPrev() >= MIN_STEP) { this.#freeze(); this.turnPending = false; }
     const fromX = this.headX, fromY = this.headY;
     const i = this.count - 1;
     this.points[i * 2] = x;

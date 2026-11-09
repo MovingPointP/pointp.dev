@@ -67,8 +67,10 @@ export class Game {
       if (this.last === null) this.last = now;
       const dt = Math.min(MAX_DT, (now - this.last) / 1000);
       this.last = now;
+      // 自己紹介だけを見せる画面は、書き終えたら絵が変わらないので描き直さない
+      const still = this.phase === "rest";
       this.step(dt);
-      this.render();
+      if (!still) this.render();
     };
     this.raf = requestAnimationFrame(tick);
     // タブが裏にある間は止め、戻ったら前回の時刻を今にそろえる
@@ -207,11 +209,11 @@ export class Game {
     const top = cam.y - h / 2 / cam.z, bottom = cam.y + h / 2 / cam.z;
     this.#drawGrid(left, top, right, bottom, cam.z);
     // 自己紹介を書いている間とカメラが寄る間は、区画を使わず座標データから直接描く
-    if (this.phase === "free") this.tiles.draw(ctx, left, top, right, bottom, this.frame);
+    if (free) this.tiles.draw(ctx, left, top, right, bottom, this.frame, this.dir[0], this.dir[1]);
     else this.#drawTrailDirect();
     for (const draw of this.overlays ?? []) draw(ctx, cam, left, top, right, bottom);
     this.#drawPoint(cam);
-    if (this.phase !== "intro") {
+    if (this.phase !== "intro" && this.phase !== "rest") {
       this.minimap.drawOverlay(this.p[0], this.p[1], w / cam.z, h / cam.z, this.ink, this.minimapPoints?.() ?? []);
       this.joystick.setLook(this.ink, this.joystick.touching || this.hintActive ? Math.atan2(this.dir[1], this.dir[0]) * 180 / Math.PI : null);
     }
@@ -219,10 +221,13 @@ export class Game {
 
   #drawGrid(left, top, right, bottom, z) {
     const ctx = this.ctx;
+    const dpr = devicePixelRatio || 1;
     const lines = (step, color, width) => {
+      // デバイス px で奇数の太さの線は半画素ずらす（画素の境目に引くと、2 画素にまたがって薄くぼやける）
+      const off = Math.round(width * dpr) % 2 ? 0.5 / (dpr * z) : 0;
       ctx.beginPath();
-      for (let x = Math.floor(left / step) * step; x <= right; x += step) { ctx.moveTo(x, top); ctx.lineTo(x, bottom); }
-      for (let y = Math.floor(top / step) * step; y <= bottom; y += step) { ctx.moveTo(left, y); ctx.lineTo(right, y); }
+      for (let x = Math.floor(left / step) * step; x <= right; x += step) { ctx.moveTo(x + off, top); ctx.lineTo(x + off, bottom); }
+      for (let y = Math.floor(top / step) * step; y <= bottom; y += step) { ctx.moveTo(left, y + off); ctx.lineTo(right, y + off); }
       ctx.strokeStyle = color; ctx.lineWidth = width / z; ctx.stroke();
     };
     lines(GRID, COLOR.gridMinor, 1);
