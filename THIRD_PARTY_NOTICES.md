@@ -47,7 +47,7 @@ SOFTWARE.
 
 Copyright 2001-2021 The STIX Fonts Project Authors (https://github.com/stipub/stixfonts), with Reserved Font Name "TM Math". STIX Fonts™ is a trademark of The Institute of Electrical and Electronics Engineers, Inc.
 
-Licensed under the SIL Open Font License, Version 1.1. The full license text is in `src/public/licenses/STIX-Two-OFL.txt` and is served at `/licenses/STIX-Two-OFL.txt`.
+Licensed under the SIL Open Font License, Version 1.1. The full license text is in `src/public/assets/licenses/STIX-Two-OFL.txt` and is served at `/assets/licenses/STIX-Two-OFL.txt`.
 
 ## Radix Colors
 

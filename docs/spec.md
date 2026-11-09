@@ -308,7 +308,7 @@ impeccable の harden で洗い出した。本番の実装で入れる。
 
 ## セキュリティとプライバシー
 
-- 配信するのは `html/` だけ（compose のマウントのとおり）。秘密の情報は `html/` に置かない
+- 配信するのは `html/` だけ（compose のマウントのとおり）。Cloudflare の許可リストが通すのは決まったパスと `/assets/` だけなので、JS・CSS・書体・画像・ライセンス文はすべて `/assets/` の下に置く（`favicon.ico` と `404.html` を除く）。秘密の情報は `html/` に置かない
 - インラインのスクリプト・スタイルを使わない（HTML に `style=""` 属性も書かない）。JS から `element.style` やカスタムプロパティを変えるのはよい
 - 文字列から HTML を作る処理（`innerHTML` など）を使わない
 - アイコンは Canvas の Path2D で描き、画像を Canvas に描かない（CSP を狭くでき、`toBlob` の失敗も避けられる）
@@ -342,7 +342,7 @@ impeccable の harden で洗い出した。本番の実装で入れる。
 - 自己紹介のデータ: `tools/intro/build.mjs` が、点P が描くための曲線のデータを JS として書き出す。実行時に、曲線を数行のコードで折れ線にし、長さの累計の表を作る（405 本の曲線で 1ms 未満）。`getPointAtLength` は使わない（重く、Safari では特に遅い）。小数は 1 桁に丸める（誤差は 0.25px 未満）
 - `noscript` 用の `intro.svg` も `html/` へ書き出す（今の `tools/intro/` は配信されない）。線の太さは、本画面と比が合うよう約 2.6（viewBox の単位）にする
 - キャッシュ
-  - JS・CSS・書体はファイル名に中身のハッシュを入れ（例: `main.3f9a2c1b.js`）、`Cache-Control: public, max-age=31536000, immutable` にする
+  - JS・CSS・書体はファイル名に中身のハッシュを入れ（例: `assets/main.3f9a2c1b.js`）、`Cache-Control: public, max-age=31536000, immutable` にする
   - HTML は今のまま、ブラウザは毎回確認し、Cloudflare は 5 分（`max-age=0, s-maxage=300`）
   - 画像・アイコンは今のまま 1 日。OGP 画像は作り直したらファイル名を変える
   - Cloudflare が HTML をキャッシュするかは、Cloudflare のキャッシュルールの設定による（katarina-infra の docs/cloudflare/cache.md で確かめる）

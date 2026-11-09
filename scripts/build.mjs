@@ -2,6 +2,7 @@
 // - JS と CSS は esbuild でまとめ、ファイル名に中身のハッシュを入れる（1 年キャッシュするため）
 // - HTML の中のファイル名は、このスクリプトで書き換える
 // - src/public/ のファイルは、そのまま html/ へ写す
+// - 配信するファイルはすべて assets/ の下に置く（Cloudflare の許可リストが通すのは決まったパスと /assets/ だけ。katarina-infra の docs/cloudflare/waf.md）
 // - 一時フォルダに書き出し、成功したら html/ の中身と入れ替える（失敗しても html/ を壊さない）
 // 使い方: node scripts/build.mjs（ビルド） / node scripts/build.mjs --serve（開発用。.dev/ に書き出し、自分の PC の中だけで配信）
 import { cp, mkdir, mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
@@ -26,7 +27,7 @@ const options = {
   format: "esm",
   // 対応する環境の下限（spec.md の「対応する環境」）
   target: ["chrome111", "edge111", "firefox113", "safari15.4"],
-  entryNames: "[name].[hash]",
+  entryNames: "assets/[name].[hash]",
   assetNames: "assets/[name].[hash]",
   loader: { ".woff2": "file" },
   metafile: true,
@@ -48,7 +49,7 @@ async function writeHtml(metafile) {
   for (const [file, info] of Object.entries(metafile.outputs)) {
     if (!info.entryPoint) continue;
     const name = info.entryPoint.split("/").pop();
-    names[name] = file.split("/").pop();
+    names[name] = `assets/${file.split("/").pop()}`;
   }
   let html = await readFile(new URL("index.html", src), "utf8");
   for (const [name, hashed] of Object.entries(names)) {

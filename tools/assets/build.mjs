@@ -1,5 +1,5 @@
 // アイコンと OGP 画像を作る。仕様は docs/spec.md の「言語と検索・SNS」
-// Chrome のヘッドレスで HTML を描いて PNG にし、src/public/ へ書き出す（Node の標準機能だけ）
+// Chrome のヘッドレスで HTML を描いて PNG にし、src/public/ へ書き出す（favicon.ico 以外は assets/ の下）（Node の標準機能だけ）
 // 使い方: node tools/assets/build.mjs（Chrome の場所は環境変数 CHROME で変えられる）
 import { execFileSync } from "node:child_process";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -9,6 +9,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 
 const chrome = process.env.CHROME || "C:/Program Files/Google/Chrome/Application/chrome.exe";
 const publicDir = new URL("../../src/public/", import.meta.url);
+const assetsDir = new URL("assets/", publicDir);
 const work = mkdtempSync(join(tmpdir(), "pointp-assets-"));
 
 const PAPER = "#fdfdfc", INK = "#1f2d5c", MINOR = "#d1f0fa", MAJOR = "#a9daed";
@@ -22,11 +23,11 @@ const icon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
 <text x="36" y="30" font-family="Georgia, serif" font-style="italic" font-weight="600" font-size="24" fill="${INK}" stroke="${PAPER}" stroke-width="4" paint-order="stroke" stroke-linejoin="round">P</text>
 </svg>
 `;
-writeFileSync(new URL("favicon.svg", publicDir), icon);
+writeFileSync(new URL("favicon.svg", assetsDir), icon);
 
 // OGP 画像: 方眼の紙に自己紹介の字（noscript 用の SVG）。作り直したら OGP_NAME の版を上げる（SNS 側が古い画像を長く覚えているため）
 const OGP_NAME = "ogp-v1.png";
-const intro = readFileSync(new URL("intro.svg", publicDir), "utf8");
+const intro = readFileSync(new URL("intro.svg", assetsDir), "utf8");
 const ogp = `<!doctype html><html><head><style>
 html, body { margin: 0; width: 1200px; height: 630px; overflow: hidden; }
 body { display: grid; place-items: center; background-color: ${PAPER};
@@ -47,10 +48,10 @@ function render(html, width, height, out) {
 }
 
 const iconPage = (size) => `<!doctype html><html><head><style>html,body{margin:0;width:${size}px;height:${size}px;overflow:hidden}svg{display:block;width:${size}px;height:${size}px}</style></head><body>${icon}</body></html>`;
-render(iconPage(180), 180, 180, new URL("apple-touch-icon.png", publicDir));
+render(iconPage(180), 180, 180, new URL("apple-touch-icon.png", assetsDir));
 const png32 = pathToFileURL(join(work, "favicon-32.png"));
 render(iconPage(32), 32, 32, png32);
-render(ogp, 1200, 630, new URL(OGP_NAME, publicDir));
+render(ogp, 1200, 630, new URL(OGP_NAME, assetsDir));
 
 // favicon.ico: 32px の PNG をそのまま 1 枚入れた ICO（ICO は中身に PNG を入れられる）
 const png = readFileSync(png32);

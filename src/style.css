@@ -1,5 +1,5 @@
 /* 仕様とデザイントークンは docs/spec.md の「デザイン・配色」「対応する環境」 */
-/* 「P」の文字の書体。STIX Two Text の斜体 600 を「P」1 文字に絞って自前で配信する（SIL OFL。licenses/STIX-Two-OFL.txt）。
+/* 「P」の文字の書体。STIX Two Text の斜体 600 を「P」1 文字に絞って自前で配信する（SIL OFL。assets/licenses/STIX-Two-OFL.txt）。
    名前はサイト独自にする（STIX Fonts は IEEE の商標のため）。使うまで読み込まれず、JS が最初のフレームのあとに読み込む */
 @font-face {
   font-family: "pointp P";
