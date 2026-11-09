@@ -8,7 +8,8 @@ export function worldSide(width, height) {
 }
 
 // 0〜side に収める
-export const wrap = (v, side) => ((v % side) + side) % side;
+// 範囲の中の値はそのまま返す（足して引くと丸めで値が変わり、端をまたいだと誤って判断される）
+export const wrap = (v, side) => { const r = v % side; return r < 0 ? (r + side) % side : r; };
 
 // 端がつながっているときの a − b（−side/2〜side/2）
 export function wrapDiff(a, b, side) {
