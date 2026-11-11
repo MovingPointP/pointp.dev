@@ -283,7 +283,7 @@ impeccable の harden で洗い出した。本番の実装で入れる。
 ## 言語と検索・SNS
 
 - 言語は英語にする（`<html lang="en">`）。見えない見出し・説明・title・description もすべて英語（画面の文字が英語なので、スクリーンリーダーが英語の音声で読むように）
-- title は `pointp.dev`。description は英語で 1 文
+- title と `og:title` は `pointp.dev — I'm pointp, always moving`（検索結果や共有のカードで、何のページかが伝わるように。自己紹介の言葉とそろえる）。description は英語で 1 文
 - canonical は `https://pointp.dev/`（末尾のスラッシュ付き）
 - OGP: `og:type`（website）・`og:title`・`og:description`・`og:url`・`og:image`（絶対 URL、1200×630 の PNG）・`og:image:alt`・`og:site_name`（pointp.dev）と、`twitter:card`（summary_large_image）
 - OGP 画像は、方眼の紙に自己紹介の字を描いたもの。作り直したらファイル名を変える（SNS 側が古い画像を長く覚えているため）
