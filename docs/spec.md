@@ -313,11 +313,11 @@ impeccable の harden で洗い出した。本番の実装で入れる。
 - 文字列から HTML を作る処理（`innerHTML` など）を使わない
 - アイコンは Canvas の Path2D で描き、画像を Canvas に描かない（CSP を狭くでき、`toBlob` の失敗も避けられる）
 - PNG には、日時のファイル名以外の情報を入れない
-- 第三者のスクリプトは読み込まない。アクセス解析・Cookie・広告・SNS の埋め込みは使わない（同意の表示やプライバシーポリシーも要らない）
+- 第三者のスクリプトは読み込まない。自分ではアクセス解析・Cookie・広告・SNS の埋め込みを入れない（同意の表示やプライバシーポリシーも要らない）。Cloudflare が差し込む Web Analytics（Cookie を使わない）は例外で、切らない（下記）
 - localStorage は、ジョイスティックに触ったかどうかの 1 キーだけにする。`"1"` 以外の値は「まだ触っていない」として扱う
 - 「P」の文字の書体（STIX Two Text）は、「P」1 文字だけに絞った woff2 を自前で配信する（Google へ閲覧者の情報が送られないように。CSP も自分のサイトだけで済む）。SIL OFL のライセンス文を一緒に置く。Reserved Font Name があれば、絞った版の中のフォント名を変える
 - セキュリティヘッダーは Nginx と Cloudflare で付ける。Nginx では `always` を付けて 404 などにも付ける。HSTS は Cloudflare で付ける
-  - Cloudflare のルール `Security headers`（katarina-infra の docs/cloudflare/https.md）が、CSP・`Referrer-Policy`・`Permissions-Policy`・`X-Frame-Options`・`Cross-Origin-Opener-Policy` を固定値で設定する。同じ名前のヘッダーは、本番では Cloudflare の値が効く
+  - Cloudflare のルール `Security headers`（インフラのリポジトリの docs/cloudflare/https.md）が、CSP・`Referrer-Policy`・`Permissions-Policy`・`X-Frame-Options`・`Cross-Origin-Opener-Policy` を固定値で設定する。同じ名前のヘッダーは、本番では Cloudflare の値が効く
   - CSP は Cloudflare の値（`frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'; upgrade-insecure-requests`）だけにし、Nginx では付けない。スクリプトの読み込みは制限しない。Cloudflare がページにスクリプトを差し込むため。厳しい CSP（`script-src 'self'` など）を本番で `Report-Only` にして確かめたところ、自分のページの違反はなく、違反はすべて Cloudflare のもの（Precursor・Web Analytics・AI Labyrinth）だった。差し込みのインラインのスクリプトはアクセスごとに中身が変わり、ハッシュで許可できない。入力欄もログインもない静的なページなのでリスクは小さいと判断した
   - Nginx が付けるもの: `X-Content-Type-Options: nosniff`、`Referrer-Policy: no-referrer`、`X-Frame-Options: DENY`、`Cross-Origin-Opener-Policy: same-origin`、`Cross-Origin-Resource-Policy: same-origin`
   - `Permissions-Policy: accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=(), browsing-topics=()`
@@ -345,8 +345,8 @@ impeccable の harden で洗い出した。本番の実装で入れる。
   - JS・CSS・書体はファイル名に中身のハッシュを入れ（例: `assets/main.3f9a2c1b.js`）、`Cache-Control: public, max-age=31536000, immutable` にする
   - HTML は今のまま、ブラウザは毎回確認し、Cloudflare は 5 分（`max-age=0, s-maxage=300`）
   - 画像・アイコンは今のまま 1 日。OGP 画像は作り直したらファイル名を変える
-  - Cloudflare が HTML をキャッシュするかは、Cloudflare のキャッシュルールの設定による（katarina-infra の docs/cloudflare/cache.md で確かめる）
-  - デプロイしたら、Cloudflare のキャッシュを消す（Purge Everything）
+  - Cloudflare が HTML をキャッシュするかは、Cloudflare のキャッシュルールの設定による（インフラのリポジトリの docs/cloudflare/cache.md で確かめる）
+  - デプロイしたら、Cloudflare のキャッシュから HTML（`/` と `/index.html`）を消す（Purge Cache で URL を指定）。古い HTML が、消えた古いハッシュの JS・CSS を指したまま残らないように。JS・CSS はファイル名が変わるので消さなくてよい。同じファイル名のまま画像を差し替えたときは、その URL も消す
 - 圧縮・HTTP/2・HTTP/3 は Cloudflare に任せる（Nginx の gzip は入れない）
 - JS の拡張子は `.js` にする（`.mjs` は Nginx の MIME タイプとキャッシュの設定で扱えない恐れがある）
 
