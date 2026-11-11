@@ -283,6 +283,7 @@ impeccable の harden で洗い出した。本番の実装で入れる。
 ## 言語と検索・SNS
 
 - 言語は英語にする（`<html lang="en">`）。見えない見出し・説明・title・description もすべて英語（画面の文字が英語なので、スクリーンリーダーが英語の音声で読むように）
+  - 例外: 見えない説明の下に、日本語の 1 文を `lang="ja"` を付けて置く（「動く点P」で検索したときに見つかるように。英語の説明と同じ内容にし、言葉を詰め込まない）
 - title と `og:title` は `pointp.dev` だけにする（説明の言葉は足さない）。description は英語で 1 文
 - canonical は `https://pointp.dev/`（末尾のスラッシュ付き）
 - OGP: `og:type`（website）・`og:title`・`og:description`・`og:url`・`og:image`（絶対 URL、1200×630 の PNG）・`og:image:alt`・`og:site_name`（pointp.dev）と、`twitter:card`（summary_large_image）
