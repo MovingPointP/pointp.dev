@@ -327,7 +327,7 @@ impeccable の harden で洗い出した。本番の実装で入れる。
 - Chrome・Edge 111 以上、Firefox 113 以上、Safari・iOS Safari 15.4 以上。それより古い版では崩れてもよい（足りない機能を JS で調べて分岐はしない）
 - color-mix は使わず、トークンの値をあらかじめ計算しておく（対応の下限を Safari 15.4 まで下げるため）
 - OffscreenCanvas と Worker は使わない（区画は通常のキャンバスで足りる）
-- `100vh` を先に書いてから `100dvh` で上書きする
+- 画面いっぱいの要素の高さは `100dvh` だけで指定する（対応する環境はどれも `dvh` を使える）
 - viewport は `width=device-width, initial-scale=1, viewport-fit=cover`（`viewport-fit=cover` がないと safe-area の値が 0 になり、ノッチ・ホームバーを避けられない）
 - `touch-action: none` と `overscroll-behavior: none` を付け、body はスクロールさせない（ドラッグでのスクロール、引っぱって更新、ダブルタップでの拡大を起こさない）。`user-select: none`・`-webkit-touch-callout: none`・`-webkit-tap-highlight-color: transparent` を付ける（長押しのメニューやタップの青い枠を出さない）
 - iOS のピンチでの拡大は止められないので、受け入れる
