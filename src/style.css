@@ -39,7 +39,7 @@ html {
   margin: -1px;
   padding: 0;
   overflow: hidden;
-  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
   white-space: nowrap;
   border: 0;
 }
@@ -87,7 +87,6 @@ body {
 .ui {
   opacity: 0;
   pointer-events: none;
-  transition: opacity var(--duration-appear) ease, transform var(--duration-appear) ease;
 }
 
 .playing .ui {
@@ -128,20 +127,19 @@ body {
   width: 200px;
   height: 200px;
   margin-left: -100px;
-  transform: translateY(12px);
   touch-action: none;
   cursor: grab;
 }
 
-.playing .joystick {
-  transform: none;
-}
-
-@media (prefers-reduced-motion: reduce) {
+/* 動きを減らす設定では、フェードも浮き上がりもせず、すぐに現れる */
+@media (prefers-reduced-motion: no-preference) {
   .ui {
-    transition: none;
+    transition: opacity var(--duration-appear) ease, transform var(--duration-appear) ease;
   }
   .joystick {
+    transform: translateY(12px);
+  }
+  .playing .joystick {
     transform: none;
   }
 }
